@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { saveVisitOffline } from '@/lib/db';
 
-export default function ScanPage() {
-  const { code } = useParams();
+function ScanPageContent() {
+  const searchParams = useSearchParams();
+  const code = searchParams.get('code');
   const { isAuthenticated, isLoading, token } = useAuth();
   const router = useRouter();
   
@@ -17,13 +18,15 @@ export default function ScanPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // In a real scenario, we might want to fetch location details from the backend if online.
-    // For now, we simulate finding the location based on the code.
+    if (!code) {
+      setError('Código no válido');
+      return;
+    }
     if (!isLoading && !isAuthenticated) {
       // Guest view
       setLocation({ uniqueCode: code, name: 'Punto Registrado (Inicia sesión para ver)' });
     } else if (isAuthenticated) {
-      // Authenticated view - typically we'd fetch location details here
+      // Authenticated view
       setLocation({ uniqueCode: code, name: 'Punto de Auditoría' });
     }
   }, [code, isAuthenticated, isLoading]);
@@ -39,7 +42,6 @@ export default function ScanPage() {
       const isOnline = navigator.onLine;
 
       if (isOnline && token) {
-        // Online Sync
         const formData = new FormData();
         formData.append('uniqueCode', code as string);
         formData.append('type', 'SPONTANEOUS');
@@ -56,7 +58,6 @@ export default function ScanPage() {
 
         if (!res.ok) throw new Error('Error al registrar visita');
       } else {
-        // Offline Sync queue
         await saveVisitOffline({
           uniqueCode: code as string,
           type: 'SPONTANEOUS',
@@ -136,5 +137,13 @@ export default function ScanPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ScanPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Cargando escáner...</div>}>
+      <ScanPageContent />
+    </Suspense>
   );
 }
