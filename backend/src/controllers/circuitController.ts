@@ -67,7 +67,7 @@ export const getCircuits = async (req: AuthRequest, res: Response): Promise<void
         const collectionLocations = await prisma.collectionLocation.count({
           where: { collectionId: c.collectionId }
         });
-        const distinctVisits = new Set(c.visits.map(v => v.locationId)).size;
+        const distinctVisits = new Set(c.visits.map((v: any) => v.locationId)).size;
         
         if (collectionLocations > 0 && distinctVisits === collectionLocations) {
           c = await prisma.circuit.update({

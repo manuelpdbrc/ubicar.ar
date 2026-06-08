@@ -40,7 +40,7 @@ export const exportCollectionKMZ = async (req: AuthRequest, res: Response): Prom
     <description>Exportado desde ubicar.ar</description>
 `;
 
-    collection.locations.forEach(cl => {
+    collection.locations.forEach((cl: any) => {
       const loc = cl.location;
       kmlStr += `
     <Placemark>
