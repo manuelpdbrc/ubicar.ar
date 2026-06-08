@@ -48,7 +48,7 @@ export default function ScanPage() {
           formData.append('image', image);
         }
 
-        const res = await fetch('http://localhost:4000/api/visits/log', {
+        const res = await fetch('/api/visits/log', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: formData

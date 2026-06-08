@@ -9,7 +9,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (token) {
-      fetch('http://localhost:4000/api/locations', {
+      fetch('/api/locations', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())

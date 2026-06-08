@@ -60,7 +60,7 @@ export default function SyncManager() {
         }
       });
 
-      const res = await fetch('http://localhost:4000/api/sync', {
+      const res = await fetch('/api/sync', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
