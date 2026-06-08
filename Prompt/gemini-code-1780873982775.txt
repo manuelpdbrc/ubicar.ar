@@ -1,0 +1,40 @@
+Build a cross-platform progressive web application (PWA) and desktop web application for creating and managing custom geographical location collections using the Google Maps API. The system serves both as a personal location log and a field audit/routing tool with offline capabilities.
+
+### 1. Database Schema & Relations
+- **User**: ID, name, email, password, role/permissions.
+- **Category**: ID, name, created_by_user_id (User-defined categories).
+- **Location**: ID, unique_code (formatted string), name (unique), latitude, longitude, category_id, created_by_user_id, image_url (optional, captured at creation).
+- **Collection**: ID, name, created_by_user_id.
+- **Collection_Location** (Pivot): collection_id, location_id. (A location can belong to multiple collections).
+- **Collection_User_Permission**: collection_id, user_id, role ('Editor', 'Viewer').
+- **Visit**: ID, location_id, user_id, date_timestamp, comment (text), image_url (optional, captured during visit), type ('Spontaneous', 'Circuit'), circuit_id (nullable).
+- **Circuit**: ID, collection_id, name, requested_date, expiration_date, assigned_operator_id (User ID), status ('Pending', 'Pending Expired', 'Completed').
+
+### 2. Core Features & Business Logic
+- **QR Code Endpoint Dynamics**: Each Location generates a unique URL QR code pointing to `/scan/{unique_code}`.
+  - *Guest/Unauthenticated*: Displays a landing page stating it's a registered point and prompts Login.
+  - *Authenticated (General)*: Displays Location Name, Category, and historical visits. Offers a button to log a "Spontaneous Visit".
+  - *Authenticated (Assigned Operator)*: If the user is the assigned operator of an Active/Pending Circuit that includes this location, prominently display an option to log the "Circuit Visit" for that pending point.
+- **Circuit Lifecycle**: A Circuit tracks a sequence of locations within a collection.
+  - A location cannot be visited more than once *within the same circuit*.
+  - When a Circuit's expiration_date passes and status is 'Pending', automatically shift status to 'Pending Expired'.
+  - When ALL locations in a Circuit have received a corresponding Circuit Visit, automatically flip the Circuit status to 'Completed'.
+- **Proximity Sorting & Navigation**:
+  - The app must fetch the device's GPS coordinates.
+  - On the collection/circuit view, sort the list of locations dynamically by proximity (closest to furthest) from the user's current GPS position.
+  - Provide a "Navigate" button next to each location that triggers an external deep link to Google Maps for turn-by-turn navigation.
+- **Offline & Synchronization Mode**:
+  - Implement LocalStorage/IndexedDB synchronization. If an operator loses connectivity in the field, they must still be able to log Visits (including text and base64/blob photos).
+  - Queue these actions locally and automatically sync/push them to the backend API database once connection is restored.
+- **Data Export**:
+  - Allow Creators/Editors to export any Collection or Location dataset into a standard `.kmz` file. The KMZ file must include the coordinates, location name, and its category in the placemark description.
+
+### 3. Access Control & Roles
+- **Creator**: Complete control over their collections, can invite Editors and Viewers.
+- **Editor**: Can add/edit locations, categories, view data, and log visits.
+- **Viewer**: Read-only access to collections, circuits, and visit history. Can log Spontaneous Visits.
+- **Circuit Operator**: Special bounded access. Can *only* view the pending locations of their specifically assigned Circuit and log visits to those pending points. They cannot see the wider collection details, other circuits, or external visit histories.
+
+### 4. UI/UX Expectations
+- Responsive layout prioritizing a mobile-first UI for field operators, and a clean grid split-screen layout (Map on right, sidebar lists/filters on left) for desktop users.
+- Beautiful, intuitive map markers color-coded by Category or Circuit Status (Pending vs Visited).

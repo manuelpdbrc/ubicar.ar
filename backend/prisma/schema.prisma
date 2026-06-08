@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Enums converted to Strings for SQLite compatibility
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  password  String
+  globalRole String @default("USER")
+  createdAt DateTime @default(now())
+
+  // Relations
+  categoriesCreated Category[]
+  locationsCreated  Location[]
+  collectionsCreated Collection[]
+  collectionPermissions CollectionUserPermission[]
+  visits            Visit[]
+  circuitsAssigned  Circuit[]
+}
+
+model Category {
+  id             Int      @id @default(autoincrement())
+  name           String
+  createdByUserId Int
+  createdByUser  User     @relation(fields: [createdByUserId], references: [id])
+  locations      Location[]
+}
+
+model Location {
+  id             Int      @id @default(autoincrement())
+  uniqueCode     String   @unique
+  name           String
+  latitude       Float
+  longitude      Float
+  imageUrl       String?
+  categoryId     Int
+  category       Category @relation(fields: [categoryId], references: [id])
+  createdByUserId Int
+  createdByUser  User     @relation(fields: [createdByUserId], references: [id])
+  
+  // Relations
+  collectionLocations CollectionLocation[]
+  visits              Visit[]
+}
+
+model Collection {
+  id             Int      @id @default(autoincrement())
+  name           String
+  createdByUserId Int
+  createdByUser  User     @relation(fields: [createdByUserId], references: [id])
+
+  // Relations
+  locations      CollectionLocation[]
+  permissions    CollectionUserPermission[]
+  circuits       Circuit[]
+}
+
+model CollectionLocation {
+  collectionId Int
+  collection   Collection @relation(fields: [collectionId], references: [id])
+  locationId   Int
+  location     Location   @relation(fields: [locationId], references: [id])
+
+  @@id([collectionId, locationId])
+}
+
+model CollectionUserPermission {
+  collectionId Int
+  collection   Collection @relation(fields: [collectionId], references: [id])
+  userId       Int
+  user         User       @relation(fields: [userId], references: [id])
+  role         String
+
+  @@id([collectionId, userId])
+}
+
+model Visit {
+  id           Int       @id @default(autoincrement())
+  locationId   Int
+  location     Location  @relation(fields: [locationId], references: [id])
+  userId       Int
+  user         User      @relation(fields: [userId], references: [id])
+  dateTimestamp DateTime @default(now())
+  comment      String?
+  imageUrl     String?
+  type         String
+  circuitId    Int?
+  circuit      Circuit?  @relation(fields: [circuitId], references: [id])
+}
+
+model Circuit {
+  id                 Int           @id @default(autoincrement())
+  collectionId       Int
+  collection         Collection    @relation(fields: [collectionId], references: [id])
+  name               String
+  requestedDate      DateTime      @default(now())
+  expirationDate     DateTime
+  assignedOperatorId Int
+  assignedOperator   User          @relation(fields: [assignedOperatorId], references: [id])
+  status             String @default("PENDING")
+
+  // Relations
+  visits             Visit[]
+}
