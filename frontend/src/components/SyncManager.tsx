@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { getOfflineVisits, clearOfflineVisits } from '@/lib/db';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL } from '@/config';
 
 export default function SyncManager() {
   const [isOnline, setIsOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const { token } = useAuth();
+  const { token, isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -30,7 +31,7 @@ export default function SyncManager() {
   }, [token]);
 
   const syncData = async () => {
-    if (!token || syncing) return;
+    if (!isOnline || !token || !isAuthenticated || syncing) return;
     
     try {
       setSyncing(true);
@@ -60,14 +61,13 @@ export default function SyncManager() {
         }
       });
 
-      const res = await fetch('/api/sync', {
+      const res = await fetch(`${API_BASE_URL}/api/sync`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formData
       });
-
       if (res.ok) {
         await clearOfflineVisits();
         console.log('Sincronización exitosa!');

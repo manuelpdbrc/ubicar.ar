@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { saveVisitOffline } from '@/lib/db';
+import { API_BASE_URL } from '@/config';
 
 function ScanPageContent() {
   const searchParams = useSearchParams();
@@ -50,7 +51,7 @@ function ScanPageContent() {
           formData.append('image', image);
         }
 
-        const res = await fetch('/api/visits/log', {
+        const res = await fetch(`${API_BASE_URL}/api/visits/log`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: formData

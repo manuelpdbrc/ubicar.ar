@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL } from '@/config';
 
 export default function Dashboard() {
   const { token } = useAuth();
@@ -9,7 +10,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (token) {
-      fetch('/api/locations', {
+      fetch(`${API_BASE_URL}/api/locations`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
