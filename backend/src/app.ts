@@ -40,7 +40,7 @@ const frontendPath = path.join(__dirname, '../../frontend/out');
 app.use(express.static(frontendPath));
 
 // Catch-all route to serve index.html for frontend routing (PWA/SPA)
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
