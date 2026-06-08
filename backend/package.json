@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "cd ../frontend && npm install && npx next build && cd ../backend && tsc",
+    "build": "cd ../frontend && npm install && npx next build && cd ../backend && tsc && rm -rf public && cp -r ../frontend/out public",
     "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -35,8 +35,8 @@ app.get('/api/health', (req, res) => {
 
 // Serve Frontend (Monolithic Deployment)
 // En producción, el código estará en backend/dist/app.js
-// El frontend compilado estará en frontend/out
-const frontendPath = path.join(__dirname, '../../frontend/out');
+// El frontend compilado estará copiado en backend/public
+const frontendPath = path.join(__dirname, '../public');
 app.use(express.static(frontendPath));
 
 // Catch-all route to serve index.html for frontend routing (PWA/SPA)
