@@ -1,67 +1,180 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getLocations = exports.createLocation = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
-const createLocation = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+exports.getLocations = getLocations;
+exports.getLocationByCode = getLocationByCode;
+exports.getLocationById = getLocationById;
+exports.createLocation = createLocation;
+exports.updateLocation = updateLocation;
+exports.deleteLocation = deleteLocation;
+const prisma_1 = __importDefault(require("../prisma"));
+/** List locations — filterable by categoryId, supports pagination */
+async function getLocations(req, res, next) {
     try {
-        const { name, latitude, longitude, categoryId, collectionId } = req.body;
-        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        const file = req.file;
-        if (!userId) {
-            res.status(401).json({ error: 'No autorizado' });
+        const userId = req.user.id;
+        const { categoryId, search, page = '1', limit = '50' } = req.query;
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+        const skip = (pageNum - 1) * limitNum;
+        const where = { createdByUserId: userId };
+        if (categoryId)
+            where['categoryId'] = parseInt(categoryId, 10);
+        if (search)
+            where['name'] = { contains: search };
+        const [data, total] = await Promise.all([
+            prisma_1.default.location.findMany({
+                where,
+                include: { category: true },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limitNum,
+            }),
+            prisma_1.default.location.count({ where }),
+        ]);
+        res.json({ data, total, page: pageNum, limit: limitNum });
+    }
+    catch (error) {
+        next(error);
+    }
+}
+/** Get a single location by its unique QR code — PUBLIC endpoint (no auth required) */
+async function getLocationByCode(req, res, next) {
+    try {
+        const code = req.params['code'];
+        const location = await prisma_1.default.location.findUnique({
+            where: { uniqueCode: code },
+            include: {
+                category: true,
+                visits: {
+                    orderBy: { dateTimestamp: 'desc' },
+                    take: 10,
+                    include: { user: { select: { id: true, name: true } } },
+                },
+            },
+        });
+        if (!location) {
+            res.status(404).json({ error: 'Ubicación no encontrada' });
             return;
         }
-        // Generate unique code for QR
-        const uniqueCode = `LOC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        const imageUrl = file ? `/uploads/${file.filename}` : null;
-        const location = yield prisma.location.create({
+        res.json(location);
+    }
+    catch (error) {
+        next(error);
+    }
+}
+/** Get a single location by ID */
+async function getLocationById(req, res, next) {
+    try {
+        const userId = req.user.id;
+        const locationId = parseInt(req.params['id'], 10);
+        const location = await prisma_1.default.location.findUnique({
+            where: { id: locationId },
+            include: {
+                category: true,
+                collectionLocations: {
+                    include: { collection: { select: { id: true, name: true } } },
+                },
+                _count: { select: { visits: true } },
+            },
+        });
+        if (!location || location.createdByUserId !== userId) {
+            res.status(404).json({ error: 'Ubicación no encontrada' });
+            return;
+        }
+        res.json(location);
+    }
+    catch (error) {
+        next(error);
+    }
+}
+/** Create a new location with optional image */
+async function createLocation(req, res, next) {
+    try {
+        const userId = req.user.id;
+        const { name, latitude, longitude, categoryId } = req.body;
+        // Verify the category belongs to the user
+        const category = await prisma_1.default.category.findUnique({ where: { id: categoryId } });
+        if (!category || category.createdByUserId !== userId) {
+            res.status(400).json({ error: 'Categoría no válida' });
+            return;
+        }
+        // Handle uploaded image
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+        const location = await prisma_1.default.location.create({
             data: {
                 name,
-                uniqueCode,
-                latitude: parseFloat(latitude),
-                longitude: parseFloat(longitude),
-                categoryId: parseInt(categoryId),
-                createdByUserId: userId,
+                latitude,
+                longitude,
+                categoryId,
                 imageUrl,
-                collectionLocations: {
-                    create: {
-                        collectionId: parseInt(collectionId)
-                    }
-                }
+                createdByUserId: userId,
+                // uniqueCode is auto-generated by Prisma @default(uuid())
             },
+            include: { category: true },
         });
         res.status(201).json(location);
     }
     catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error al crear locación.' });
+        next(error);
     }
-});
-exports.createLocation = createLocation;
-const getLocations = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+}
+/** Update a location */
+async function updateLocation(req, res, next) {
     try {
-        const locations = yield prisma.location.findMany({
-            include: {
-                category: true,
-                collectionLocations: true
+        const userId = req.user.id;
+        const locationId = parseInt(req.params['id'], 10);
+        const { name, latitude, longitude, categoryId } = req.body;
+        // Verify ownership
+        const location = await prisma_1.default.location.findUnique({ where: { id: locationId } });
+        if (!location || location.createdByUserId !== userId) {
+            res.status(404).json({ error: 'Ubicación no encontrada' });
+            return;
+        }
+        // Verify category if changed
+        if (categoryId !== undefined) {
+            const category = await prisma_1.default.category.findUnique({ where: { id: categoryId } });
+            if (!category || category.createdByUserId !== userId) {
+                res.status(400).json({ error: 'Categoría no válida' });
+                return;
             }
+        }
+        // Handle image update
+        const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+        const updated = await prisma_1.default.location.update({
+            where: { id: locationId },
+            data: {
+                ...(name !== undefined && { name }),
+                ...(latitude !== undefined && { latitude }),
+                ...(longitude !== undefined && { longitude }),
+                ...(categoryId !== undefined && { categoryId }),
+                ...(imageUrl !== undefined && { imageUrl }),
+            },
+            include: { category: true },
         });
-        res.json(locations);
+        res.json(updated);
     }
     catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error al obtener locaciones.' });
+        next(error);
     }
-});
-exports.getLocations = getLocations;
+}
+/** Delete a location */
+async function deleteLocation(req, res, next) {
+    try {
+        const userId = req.user.id;
+        const locationId = parseInt(req.params['id'], 10);
+        const location = await prisma_1.default.location.findUnique({ where: { id: locationId } });
+        if (!location || location.createdByUserId !== userId) {
+            res.status(404).json({ error: 'Ubicación no encontrada' });
+            return;
+        }
+        // Cascade deletes will handle collectionLocations and visits
+        await prisma_1.default.location.delete({ where: { id: locationId } });
+        res.status(204).send();
+    }
+    catch (error) {
+        next(error);
+    }
+}
+//# sourceMappingURL=locationController.js.map

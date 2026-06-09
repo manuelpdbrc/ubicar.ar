@@ -2,44 +2,63 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 
+import authRoutes from './routes/authRoutes';
+import categoryRoutes from './routes/categoryRoutes';
+import locationRoutes from './routes/locationRoutes';
+// TODO: import collectionRoutes from './routes/collectionRoutes';
+// TODO: import visitRoutes from './routes/visitRoutes';
+// TODO: import circuitRoutes from './routes/circuitRoutes';
+
+import { errorHandler } from './middleware/errorHandler';
+
 const app = express();
 
-app.use(cors());
+// ─── CORS ────────────────────────────────────────────────────
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true,
+  })
+);
+
+// ─── Body Parsing ────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-import authRoutes from './routes/authRoutes';
-import collectionRoutes from './routes/collectionRoutes';
-import locationRoutes from './routes/locationRoutes';
-import visitRoutes from './routes/visitRoutes';
-import circuitRoutes from './routes/circuitRoutes';
-import syncRoutes from './routes/syncRoutes';
-import exportRoutes from './routes/exportRoutes';
+// ─── Static: uploaded files ──────────────────────────────────
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-// Serve static uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// ─── API Routes ──────────────────────────────────────────────
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
-// API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/collections', collectionRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use('/api/locations', locationRoutes);
-app.use('/api/visits', visitRoutes);
-app.use('/api/circuits', circuitRoutes);
-app.use('/api/sync', syncRoutes);
-app.use('/api/export', exportRoutes);
+// TODO: app.use('/api/collections', collectionRoutes);
+// TODO: app.use('/api/visits', visitRoutes);
+// TODO: app.use('/api/circuits', circuitRoutes);
 
-// Routes placeholder
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
+// ─── Catch-all for unknown API routes → 404 JSON ────────────
+app.all('/api/*path', (_req, res) => {
+  res.status(404).json({ error: 'Ruta de API no encontrada' });
 });
 
-// Serve Frontend (Monolithic Deployment)
-const frontendPath = path.join(__dirname, '../public');
-app.use(express.static(frontendPath));
+// ─── Static: SPA frontend ───────────────────────────────────
+const publicDir = path.join(process.cwd(), 'public');
+app.use(express.static(publicDir));
 
-// Catch-all route to serve index.html for frontend routing (PWA/SPA)
-app.use((req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
+app.get('*path', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'), (err) => {
+    if (err) {
+      // No frontend build available yet — just send a plain 200
+      res.status(200).json({ message: 'ubicar.ar API running' });
+    }
+  });
 });
+
+// ─── Global Error Handler (must be LAST) ─────────────────────
+app.use(errorHandler);
 
 export default app;

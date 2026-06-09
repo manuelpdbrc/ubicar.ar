@@ -1,27 +1,52 @@
 import multer from 'multer';
+import crypto from 'crypto';
 import path from 'path';
-import fs from 'fs';
+
+/** Allowed MIME types for image uploads */
+const ALLOWED_MIMES: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+};
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../../uploads');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
+  destination: (_req, _file, cb) => {
+    cb(null, 'uploads/');
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() ||
+      ALLOWED_MIMES[file.mimetype] ||
+      '.jpg';
+    const uniqueName = `${Date.now()}-${crypto.randomUUID()}${ext}`;
+    cb(null, uniqueName);
   },
 });
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  if (file.mimetype.startsWith('image/')) {
+const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
+  if (ALLOWED_MIMES[file.mimetype]) {
     cb(null, true);
   } else {
-    cb(new Error('Solo se permiten imágenes.'));
+    cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE'));
   }
 };
 
-export const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
+/**
+ * Configured Multer instance for image uploads.
+ * - Stores files in `uploads/` with unique timestamped names
+ * - Only allows JPEG, PNG, GIF, and WebP images
+ * - Maximum file size: 5 MB
+ */
+export const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 MB
+  },
+});
+
+/** Middleware for single image upload (field name: 'image') */
+export const uploadSingle = upload.single('image');
+
+/** Middleware for multiple image uploads (field name: 'images', max: 10) */
+export const uploadArray = upload.array('images', 10);

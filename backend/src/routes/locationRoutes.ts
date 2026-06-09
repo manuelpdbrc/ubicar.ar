@@ -1,13 +1,25 @@
 import { Router } from 'express';
-import { createLocation, getLocations } from '../controllers/locationController';
-import { authenticateToken } from '../middleware/authMiddleware';
+import { authenticate } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
+import {
+  getLocations,
+  getLocationByCode,
+  getLocationById,
+  createLocation,
+  updateLocation,
+  deleteLocation,
+} from '../controllers/locationController';
 
 const router = Router();
 
-router.use(authenticateToken);
+// Public endpoint — QR scan landing (no auth required)
+router.get('/code/:code', getLocationByCode);
 
-router.post('/', upload.single('image'), createLocation);
-router.get('/', getLocations);
+// Protected endpoints
+router.get('/', authenticate, getLocations);
+router.get('/:id', authenticate, getLocationById);
+router.post('/', authenticate, upload.single('image'), createLocation);
+router.put('/:id', authenticate, upload.single('image'), updateLocation);
+router.delete('/:id', authenticate, deleteLocation);
 
 export default router;

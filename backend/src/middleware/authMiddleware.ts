@@ -1,31 +1,85 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { GlobalRole } from '@prisma/client';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_jwt_key_change_me_in_production';
-
-export interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    globalRole: string;
-  };
+// ── Augment Express Request with user payload ────────────────
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload;
+    }
+  }
 }
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+/** Shape of the decoded JWT payload attached to req.user */
+export interface JwtPayload {
+  id: number;
+  globalRole: GlobalRole;
+}
 
-  if (!token) {
-    res.status(401).json({ error: 'Acceso denegado. Token no proporcionado.' });
+/**
+ * Returns the JWT_SECRET from env, throwing immediately if it's missing.
+ * This ensures the app never silently runs without a secret configured.
+ */
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      'JWT_SECRET no está definido en las variables de entorno. La aplicación no puede iniciar sin esta configuración.'
+    );
+  }
+  return secret;
+}
+
+/**
+ * Express middleware that verifies a Bearer JWT from the Authorization header.
+ * On success, attaches the decoded `{ id, globalRole }` to `req.user`.
+ * On failure, responds with 401.
+ */
+export const authenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Token de autenticación requerido' });
     return;
   }
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) {
-      res.status(403).json({ error: 'Token inválido o expirado.' });
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const secret = getJwtSecret();
+    const decoded = jwt.verify(token, secret) as JwtPayload;
+    req.user = { id: decoded.id, globalRole: decoded.globalRole };
+    next();
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ error: 'Token expirado' });
       return;
     }
-    
-    req.user = decoded as { id: number; globalRole: string };
-    next();
-  });
+    if (error instanceof jwt.JsonWebTokenError) {
+      res.status(401).json({ error: 'Token inválido' });
+      return;
+    }
+    next(error);
+  }
+};
+
+/** 7 days expressed in seconds */
+const DEFAULT_TOKEN_EXPIRY = 7 * 24 * 60 * 60; // 604800s
+
+/**
+ * Helper to generate a signed JWT for a user.
+ * @param payload - Data to encode (id, globalRole)
+ * @param expiresIn - Token lifetime in seconds (default: 7 days)
+ */
+export const signToken = (
+  payload: JwtPayload,
+  expiresIn: number = DEFAULT_TOKEN_EXPIRY
+): string => {
+  const secret = getJwtSecret();
+  return jwt.sign(payload, secret, { expiresIn });
 };

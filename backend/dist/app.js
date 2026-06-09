@@ -6,38 +6,50 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
+const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const categoryRoutes_1 = __importDefault(require("./routes/categoryRoutes"));
+const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
+// TODO: import collectionRoutes from './routes/collectionRoutes';
+// TODO: import visitRoutes from './routes/visitRoutes';
+// TODO: import circuitRoutes from './routes/circuitRoutes';
+const errorHandler_1 = require("./middleware/errorHandler");
 const app = (0, express_1.default)();
-app.use((0, cors_1.default)());
+// ─── CORS ────────────────────────────────────────────────────
+app.use((0, cors_1.default)({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true,
+}));
+// ─── Body Parsing ────────────────────────────────────────────
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
-const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
-const collectionRoutes_1 = __importDefault(require("./routes/collectionRoutes"));
-const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
-const visitRoutes_1 = __importDefault(require("./routes/visitRoutes"));
-const circuitRoutes_1 = __importDefault(require("./routes/circuitRoutes"));
-const syncRoutes_1 = __importDefault(require("./routes/syncRoutes"));
-const exportRoutes_1 = __importDefault(require("./routes/exportRoutes"));
-// Serve static uploads
-app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads')));
-// API Routes
+// ─── Static: uploaded files ──────────────────────────────────
+app.use('/uploads', express_1.default.static(path_1.default.join(process.cwd(), 'uploads')));
+// ─── API Routes ──────────────────────────────────────────────
+app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 app.use('/api/auth', authRoutes_1.default);
-app.use('/api/collections', collectionRoutes_1.default);
+app.use('/api/categories', categoryRoutes_1.default);
 app.use('/api/locations', locationRoutes_1.default);
-app.use('/api/visits', visitRoutes_1.default);
-app.use('/api/circuits', circuitRoutes_1.default);
-app.use('/api/sync', syncRoutes_1.default);
-app.use('/api/export', exportRoutes_1.default);
-// Routes placeholder
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date() });
+// TODO: app.use('/api/collections', collectionRoutes);
+// TODO: app.use('/api/visits', visitRoutes);
+// TODO: app.use('/api/circuits', circuitRoutes);
+// ─── Catch-all for unknown API routes → 404 JSON ────────────
+app.all('/api/*path', (_req, res) => {
+    res.status(404).json({ error: 'Ruta de API no encontrada' });
 });
-// Serve Frontend (Monolithic Deployment)
-// En producción, el código estará en backend/dist/app.js
-// El frontend compilado estará en frontend/out
-const frontendPath = path_1.default.join(__dirname, '../../frontend/out');
-app.use(express_1.default.static(frontendPath));
-// Catch-all route to serve index.html for frontend routing (PWA/SPA)
-app.use((req, res) => {
-    res.sendFile(path_1.default.join(frontendPath, 'index.html'));
+// ─── Static: SPA frontend ───────────────────────────────────
+const publicDir = path_1.default.join(process.cwd(), 'public');
+app.use(express_1.default.static(publicDir));
+app.get('*path', (_req, res) => {
+    res.sendFile(path_1.default.join(publicDir, 'index.html'), (err) => {
+        if (err) {
+            // No frontend build available yet — just send a plain 200
+            res.status(200).json({ message: 'ubicar.ar API running' });
+        }
+    });
 });
+// ─── Global Error Handler (must be LAST) ─────────────────────
+app.use(errorHandler_1.errorHandler);
 exports.default = app;
+//# sourceMappingURL=app.js.map

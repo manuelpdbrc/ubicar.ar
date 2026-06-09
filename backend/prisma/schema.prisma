@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// ─── ubicar.ar — Prisma Schema ────────────────────────────────
+// MariaDB (Hostinger Business), connection_limit=3 in DATABASE_URL
 
 generator client {
   provider = "prisma-client-js"
@@ -10,106 +10,165 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums converted to Strings for SQLite compatibility
+// ─── Enums ──────────────────────────────────────────────────
+
+enum GlobalRole {
+  USER
+  ADMIN
+}
+
+enum CollectionRole {
+  CREATOR
+  EDITOR
+  VIEWER
+}
+
+enum VisitType {
+  SPONTANEOUS
+  CIRCUIT
+}
+
+enum CircuitStatus {
+  PENDING
+  PENDING_EXPIRED
+  COMPLETED
+}
+
+// ─── Models ─────────────────────────────────────────────────
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String
-  password  String
-  globalRole String @default("USER")
-  createdAt DateTime @default(now())
+  id         Int        @id @default(autoincrement())
+  name       String     @db.VarChar(100)
+  email      String     @unique @db.VarChar(255)
+  password   String     @db.VarChar(255)
+  globalRole GlobalRole @default(USER)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
-  // Relations
-  categoriesCreated Category[]
-  locationsCreated  Location[]
-  collectionsCreated Collection[]
+  categoriesCreated     Category[]
+  locationsCreated      Location[]
+  collectionsCreated    Collection[]
   collectionPermissions CollectionUserPermission[]
-  visits            Visit[]
-  circuitsAssigned  Circuit[]
+  visits                Visit[]
+  circuitsAssigned      Circuit[]
+
+  @@map("users")
 }
 
 model Category {
-  id             Int      @id @default(autoincrement())
-  name           String
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(100)
+  color           String   @default("#3B82F6") @db.VarChar(7)
   createdByUserId Int
-  createdByUser  User     @relation(fields: [createdByUserId], references: [id])
-  locations      Location[]
+  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+
+  locations Location[]
+
+  @@index([createdByUserId])
+  @@map("categories")
 }
 
 model Location {
-  id             Int      @id @default(autoincrement())
-  uniqueCode     String   @unique
-  name           String
-  latitude       Float
-  longitude      Float
-  imageUrl       String?
-  categoryId     Int
-  category       Category @relation(fields: [categoryId], references: [id])
+  id              Int       @id @default(autoincrement())
+  uniqueCode      String    @unique @default(uuid()) @db.VarChar(36)
+  name            String    @db.VarChar(255)
+  latitude        Float
+  longitude       Float
+  imageUrl        String?   @db.VarChar(500)
+  categoryId      Int
+  category        Category  @relation(fields: [categoryId], references: [id])
   createdByUserId Int
-  createdByUser  User     @relation(fields: [createdByUserId], references: [id])
-  
-  // Relations
+  createdByUser   User      @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
   collectionLocations CollectionLocation[]
   visits              Visit[]
+
+  @@index([categoryId])
+  @@index([createdByUserId])
+  @@map("locations")
 }
 
 model Collection {
-  id             Int      @id @default(autoincrement())
-  name           String
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(255)
+  description     String?  @db.Text
   createdByUserId Int
-  createdByUser  User     @relation(fields: [createdByUserId], references: [id])
+  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  // Relations
-  locations      CollectionLocation[]
-  permissions    CollectionUserPermission[]
-  circuits       Circuit[]
+  locations   CollectionLocation[]
+  permissions CollectionUserPermission[]
+  circuits    Circuit[]
+
+  @@index([createdByUserId])
+  @@map("collections")
 }
 
 model CollectionLocation {
   collectionId Int
-  collection   Collection @relation(fields: [collectionId], references: [id])
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   locationId   Int
-  location     Location   @relation(fields: [locationId], references: [id])
+  location     Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  addedAt      DateTime   @default(now())
 
   @@id([collectionId, locationId])
+  @@index([locationId])
+  @@map("collection_locations")
 }
 
 model CollectionUserPermission {
   collectionId Int
-  collection   Collection @relation(fields: [collectionId], references: [id])
+  collection   Collection     @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   userId       Int
-  user         User       @relation(fields: [userId], references: [id])
-  role         String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         CollectionRole
+  createdAt    DateTime       @default(now())
 
   @@id([collectionId, userId])
+  @@index([userId])
+  @@map("collection_user_permissions")
 }
 
 model Visit {
-  id           Int       @id @default(autoincrement())
-  locationId   Int
-  location     Location  @relation(fields: [locationId], references: [id])
-  userId       Int
-  user         User      @relation(fields: [userId], references: [id])
-  dateTimestamp DateTime @default(now())
-  comment      String?
-  imageUrl     String?
-  type         String
-  circuitId    Int?
-  circuit      Circuit?  @relation(fields: [circuitId], references: [id])
+  id            Int       @id @default(autoincrement())
+  clientId      String?   @unique @db.VarChar(36)
+  locationId    Int
+  location      Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateTimestamp DateTime  @default(now())
+  comment       String?   @db.Text
+  imageUrl      String?   @db.VarChar(500)
+  type          VisitType @default(SPONTANEOUS)
+  circuitId     Int?
+  circuit       Circuit?  @relation(fields: [circuitId], references: [id], onDelete: SetNull)
+
+  @@index([locationId])
+  @@index([userId])
+  @@index([circuitId])
+  @@map("visits")
 }
 
 model Circuit {
   id                 Int           @id @default(autoincrement())
+  name               String        @db.VarChar(255)
   collectionId       Int
-  collection         Collection    @relation(fields: [collectionId], references: [id])
-  name               String
-  requestedDate      DateTime      @default(now())
-  expirationDate     DateTime
+  collection         Collection    @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   assignedOperatorId Int
   assignedOperator   User          @relation(fields: [assignedOperatorId], references: [id])
-  status             String @default("PENDING")
+  expirationDate     DateTime
+  status             CircuitStatus @default(PENDING)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
-  // Relations
-  visits             Visit[]
+  visits Visit[]
+
+  @@index([collectionId])
+  @@index([assignedOperatorId])
+  @@index([status])
+  @@map("circuits")
 }

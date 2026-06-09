@@ -4,3 +4,8 @@ node_modules/
 *.db
 backend/uploads/*
 !backend/uploads/.gitkeep
+backend/dist/
+backend/public/
+frontend/dist/
+frontend/node_modules/
+*.log
