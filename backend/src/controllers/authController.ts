@@ -51,8 +51,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign({ id: user.id, globalRole: user.globalRole }, JWT_SECRET, { expiresIn: '7d' });
     res.status(200).json({ token, user: { id: user.id, name: user.name, email: user.email, globalRole: user.globalRole } });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error interno del servidor.' });
+  } catch (error: any) {
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      error: 'Error interno del servidor.', 
+      details: error.message || 'Error desconocido' 
+    });
   }
 };
