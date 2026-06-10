@@ -110,6 +110,8 @@ export function MapView({
           border-radius: var(--radius-lg);
           overflow: hidden;
           background-color: var(--color-bg-secondary);
+          isolation: isolate;
+          z-index: 0;
         }
 
         .map-container .leaflet-container {

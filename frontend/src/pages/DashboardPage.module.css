@@ -20,9 +20,9 @@
 /* ── FAB ────────────────────────────────────── */
 .fab {
   position: absolute;
-  bottom: 1rem;
+  bottom: calc(40% + 0.75rem);
   right: 1rem;
-  z-index: var(--z-dropdown);
+  z-index: var(--z-sticky);
 }
 
 .fabButton {
