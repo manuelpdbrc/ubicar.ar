@@ -102,6 +102,9 @@ export function MapView({
         <MapClickHandler onClick={onMapClick} />
       </MapContainer>
 
+      {/* Center crosshair */}
+      {onMapClick && <div className="map-crosshair" aria-hidden="true" />}
+
       <style>{`
         .map-container {
           position: relative;
@@ -138,6 +141,44 @@ export function MapView({
 
         .map-container .leaflet-control-zoom a:hover {
           background-color: var(--color-surface-hover) !important;
+        }
+
+        /* ── Crosshair ── */
+        .map-crosshair {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 28px;
+          height: 28px;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          z-index: 2;
+        }
+
+        /* Vertical line */
+        .map-crosshair::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 50%;
+          width: 2px;
+          height: 100%;
+          transform: translateX(-50%);
+          background-color: rgba(99, 102, 241, 0.7);
+          border-radius: 1px;
+        }
+
+        /* Horizontal line */
+        .map-crosshair::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 0;
+          width: 100%;
+          height: 2px;
+          transform: translateY(-50%);
+          background-color: rgba(99, 102, 241, 0.7);
+          border-radius: 1px;
         }
       `}</style>
     </div>
