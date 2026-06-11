@@ -34,6 +34,14 @@ export function Modal({ isOpen, onClose, title, size = 'md', children }: ModalPr
 
       // Focus first focusable element
       requestAnimationFrame(() => {
+        if (contentRef.current?.contains(document.activeElement)) return;
+        
+        const autoFocusEl = contentRef.current?.querySelector<HTMLElement>('[autofocus]');
+        if (autoFocusEl) {
+          autoFocusEl.focus();
+          return;
+        }
+
         const focusable = contentRef.current?.querySelector<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );

@@ -97,6 +97,13 @@ export function BottomNav() {
             display: none;
           }
         }
+
+        /* Hide when virtual keyboard is likely open (mobile) */
+        @media (max-width: 767px) {
+          body:has(input:not([type="radio"]):not([type="checkbox"]):not([type="file"]):focus, textarea:focus) .bottom-nav {
+            display: none !important;
+          }
+        }
       `}</style>
     </nav>
   );
