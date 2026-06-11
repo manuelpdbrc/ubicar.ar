@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
 import { api, ApiRequestError } from '../../lib/api';
 import { Button } from '../ui/Button';
@@ -28,6 +29,7 @@ export function LocationForm({
   initialLat,
   initialLng,
 }: LocationFormProps) {
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
@@ -338,6 +340,32 @@ export function LocationForm({
             </div>
           )}
         </div>
+
+        {/* QR Code link */}
+        {isEditing && editLocation && (
+          <div className="form-group" style={{ padding: '1rem', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+            <label className="input-label">Código Identificador (QR)</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.25rem' }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '1.1rem', fontWeight: 600 }}>
+                {(editLocation.uniqueCode && editLocation.uniqueCode.length < 36) ? editLocation.uniqueCode : 'No Definido'}
+              </span>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  onClose();
+                  navigate(`/scanner?linkLocationId=${editLocation.id}`);
+                }}
+              >
+                📷 Vincular QR
+              </Button>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: '0.5rem' }}>
+              Podés escanear una etiqueta impresa para asociarla a esta ubicación.
+            </p>
+          </div>
+        )}
 
         <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
           <Button type="button" variant="ghost" onClick={onClose}>

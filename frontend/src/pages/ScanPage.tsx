@@ -41,11 +41,15 @@ export function ScanPage() {
   if (error || !location) {
     return (
       <div className="flex-center" style={{ minHeight: '100vh', flexDirection: 'column', gap: '1rem', padding: '2rem', textAlign: 'center' }}>
-        <span style={{ fontSize: '3rem' }}>🔍</span>
-        <h2>Código inválido</h2>
-        <p className="text-muted">{error || 'No se encontró la ubicación escaneada.'}</p>
+        <span style={{ fontSize: '3rem' }}>❓</span>
+        <h2>Código No Asignado</h2>
+        <p className="text-muted">
+          {error === 'Ubicación no encontrada' 
+            ? 'Este código QR aún no está asociado a ninguna ubicación. Si sos administrador, vinculalo desde la app.' 
+            : (error || 'No se encontró la ubicación escaneada.')}
+        </p>
         <Link to="/dashboard">
-          <Button variant="primary">Volver al inicio</Button>
+          <Button variant="primary">Ir a la App</Button>
         </Link>
       </div>
     );

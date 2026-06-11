@@ -67,6 +67,10 @@ export default function DashboardPage() {
 
   function handleLocationClick(location: Location) {
     setSelectedLocationId(location.id);
+  }
+
+  function handleEditLocation(location: Location) {
+    setSelectedLocationId(location.id);
     setEditLocation(location);
     setShowLocationForm(true);
   }
@@ -147,7 +151,7 @@ export default function DashboardPage() {
             isLoading={isLoading}
             onLocationClick={handleLocationClick}
             onNavigate={handleNavigate}
-            onLinkQR={handleLinkQR}
+            onEdit={handleEditLocation}
             onAddClick={handleAddNew}
             distances={distances}
           />

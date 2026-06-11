@@ -6,7 +6,7 @@ interface LocationCardProps {
   location: Location;
   onClick?: (location: Location) => void;
   onNavigate?: (location: Location) => void;
-  onLinkQR?: (location: Location) => void;
+  onEdit?: (location: Location) => void;
   distance?: number | null;
 }
 
@@ -15,7 +15,7 @@ function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(1)} km`;
 }
 
-export function LocationCard({ location, onClick, onNavigate, onLinkQR, distance }: LocationCardProps) {
+export function LocationCard({ location, onClick, onNavigate, onEdit, distance }: LocationCardProps) {
   const categoryColor = location.category?.color || '#6366F1';
 
   return (
@@ -75,17 +75,17 @@ export function LocationCard({ location, onClick, onNavigate, onLinkQR, distance
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '0.25rem', flexDirection: 'column' }}>
-          {onLinkQR && (
+          {onEdit && (
             <button
               className="btn btn-ghost btn-icon btn-sm"
               onClick={(e) => {
                 e.stopPropagation();
-                onLinkQR(location);
+                onEdit(location);
               }}
-              title="Vincular Etiqueta QR"
-              aria-label={`Vincular QR a ${location.name}`}
+              title="Editar ubicación"
+              aria-label={`Editar ${location.name}`}
             >
-              📷
+              ✏️
             </button>
           )}
           {onNavigate && (

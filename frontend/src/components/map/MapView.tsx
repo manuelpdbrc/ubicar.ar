@@ -34,6 +34,22 @@ function FlyToUser({ position }: { position: { lat: number; lng: number } | null
   return null;
 }
 
+/** Component to handle map panning when a location is selected */
+function FlyToLocation({ locationId, locations }: { locationId?: number | null, locations: Location[] }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (locationId) {
+      const loc = locations.find(l => l.id === locationId);
+      if (loc) {
+        map.flyTo([loc.latitude, loc.longitude], 16, { duration: 1.0 });
+      }
+    }
+  }, [locationId, locations, map]);
+
+  return null;
+}
+
 /** Component to handle map click events */
 function MapClickHandler({ onClick }: { onClick?: (lat: number, lng: number) => void }) {
   const map = useMap();
@@ -97,6 +113,9 @@ export function MapView({
 
         {/* Fly to user on first position */}
         <FlyToUser position={userPosition ?? null} />
+
+        {/* Fly to selected location */}
+        <FlyToLocation locationId={selectedLocationId} locations={locations} />
 
         {/* Map click handler */}
         <MapClickHandler onClick={onMapClick} />
