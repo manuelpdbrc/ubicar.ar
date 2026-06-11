@@ -74,18 +74,19 @@ export async function getLocations(req: Request, res: Response, next: NextFuncti
 /** Get a single location by its unique QR code — PUBLIC endpoint (no auth required) */
 export async function getLocationByCode(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const code = req.params['code'] as string;
+    const rawCode = req.params['code'] as string;
+    const normalizedCode = rawCode.replace(/[\s-]/g, '').toUpperCase();
 
     const [locationRows] = await pool.execute<mysql.RowDataPacket[]>(
       `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
        FROM locations l
        LEFT JOIN categories c ON l.categoryId = c.id
-       WHERE LOWER(TRIM(l.uniqueCode)) = LOWER(TRIM(?))`,
-      [code]
+       WHERE REPLACE(REPLACE(UPPER(l.uniqueCode), '-', ''), ' ', '') = ?`,
+      [normalizedCode]
     );
 
     if (locationRows.length === 0) {
-      res.status(404).json({ error: 'Ubicación no encontrada', details: [{ field: 'code', message: `Buscado: "${code}"` }] });
+      res.status(404).json({ error: 'Ubicación no encontrada', details: [{ field: 'code', message: `Buscado: "${rawCode}" -> "${normalizedCode}"` }] });
       return;
     }
 
