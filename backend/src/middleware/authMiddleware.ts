@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { GlobalRole } from '@prisma/client';
+
+/** Possible global roles — replaces the Prisma-generated GlobalRole enum */
+export type GlobalRole = 'USER' | 'ADMIN';
 
 // ── Augment Express Request with user payload ────────────────
 declare global {

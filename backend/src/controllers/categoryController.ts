@@ -1,18 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
-import prisma from '../prisma';
+import mysql from 'mysql2/promise';
+import pool from '../db';
 
 /** List categories created by the authenticated user */
 export async function getCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.id;
 
-    const categories = await prisma.category.findMany({
-      where: { createdByUserId: userId },
-      orderBy: { name: 'asc' },
-      include: {
-        _count: { select: { locations: true } },
-      },
-    });
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+      `SELECT c.*, COUNT(l.id) as locationCount
+       FROM categories c
+       LEFT JOIN locations l ON l.categoryId = c.id
+       WHERE c.createdByUserId = ?
+       GROUP BY c.id
+       ORDER BY c.name ASC`,
+      [userId]
+    );
+
+    // Transform to match Prisma's _count format for frontend compatibility
+    const categories = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      color: row.color,
+      createdByUserId: row.createdByUserId,
+      createdAt: row.createdAt,
+      _count: { locations: Number(row.locationCount) },
+    }));
 
     res.json(categories);
   } catch (error) {
@@ -27,24 +40,28 @@ export async function createCategory(req: Request, res: Response, next: NextFunc
     const { name, color } = req.body as { name: string; color: string };
 
     // Check for duplicate name for this user
-    const existing = await prisma.category.findFirst({
-      where: { name, createdByUserId: userId },
-    });
+    const [existingRows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT id FROM categories WHERE name = ? AND createdByUserId = ?',
+      [name, userId]
+    );
 
-    if (existing) {
+    if (existingRows.length > 0) {
       res.status(409).json({ error: 'Ya tenés una categoría con ese nombre' });
       return;
     }
 
-    const category = await prisma.category.create({
-      data: {
-        name,
-        color,
-        createdByUserId: userId,
-      },
-    });
+    const [result] = await pool.execute<mysql.ResultSetHeader>(
+      'INSERT INTO categories (name, color, createdByUserId, createdAt) VALUES (?, ?, ?, NOW(3))',
+      [name, color, userId]
+    );
 
-    res.status(201).json(category);
+    // Return the created category
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT * FROM categories WHERE id = ?',
+      [result.insertId]
+    );
+
+    res.status(201).json(rows[0]);
   } catch (error) {
     next(error);
   }
@@ -58,7 +75,11 @@ export async function updateCategory(req: Request, res: Response, next: NextFunc
     const { name, color } = req.body as { name?: string; color?: string };
 
     // Verify ownership
-    const category = await prisma.category.findUnique({ where: { id: categoryId } });
+    const [catRows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT * FROM categories WHERE id = ?',
+      [categoryId]
+    );
+    const category = catRows[0];
     if (!category || category.createdByUserId !== userId) {
       res.status(404).json({ error: 'Categoría no encontrada' });
       return;
@@ -66,21 +87,43 @@ export async function updateCategory(req: Request, res: Response, next: NextFunc
 
     // Check duplicate name if name is being changed
     if (name && name !== category.name) {
-      const existing = await prisma.category.findFirst({
-        where: { name, createdByUserId: userId, NOT: { id: categoryId } },
-      });
-      if (existing) {
+      const [existingRows] = await pool.execute<mysql.RowDataPacket[]>(
+        'SELECT id FROM categories WHERE name = ? AND createdByUserId = ? AND id != ?',
+        [name, userId, categoryId]
+      );
+      if (existingRows.length > 0) {
         res.status(409).json({ error: 'Ya tenés una categoría con ese nombre' });
         return;
       }
     }
 
-    const updated = await prisma.category.update({
-      where: { id: categoryId },
-      data: { ...(name !== undefined && { name }), ...(color !== undefined && { color }) },
-    });
+    // Build dynamic SET clause
+    const setClauses: string[] = [];
+    const params: (string | number)[] = [];
+    if (name !== undefined) {
+      setClauses.push('name = ?');
+      params.push(name);
+    }
+    if (color !== undefined) {
+      setClauses.push('color = ?');
+      params.push(color);
+    }
 
-    res.json(updated);
+    if (setClauses.length > 0) {
+      params.push(categoryId, userId);
+      await pool.execute(
+        `UPDATE categories SET ${setClauses.join(', ')} WHERE id = ? AND createdByUserId = ?`,
+        params
+      );
+    }
+
+    // Return the updated category
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT * FROM categories WHERE id = ?',
+      [categoryId]
+    );
+
+    res.json(rows[0]);
   } catch (error) {
     next(error);
   }
@@ -92,24 +135,31 @@ export async function deleteCategory(req: Request, res: Response, next: NextFunc
     const userId = req.user!.id;
     const categoryId = parseInt(req.params['id'] as string, 10);
 
-    const category = await prisma.category.findUnique({
-      where: { id: categoryId },
-      include: { _count: { select: { locations: true } } },
-    });
+    // Fetch category with location count
+    const [catRows] = await pool.execute<mysql.RowDataPacket[]>(
+      `SELECT c.*, COUNT(l.id) as locationCount
+       FROM categories c
+       LEFT JOIN locations l ON l.categoryId = c.id
+       WHERE c.id = ?
+       GROUP BY c.id`,
+      [categoryId]
+    );
+    const category = catRows[0];
 
     if (!category || category.createdByUserId !== userId) {
       res.status(404).json({ error: 'Categoría no encontrada' });
       return;
     }
 
-    if (category._count.locations > 0) {
+    const locationCount = Number(category.locationCount);
+    if (locationCount > 0) {
       res.status(409).json({
-        error: `No se puede eliminar: la categoría tiene ${category._count.locations} ubicación(es) asociada(s)`,
+        error: `No se puede eliminar: la categoría tiene ${locationCount} ubicación(es) asociada(s)`,
       });
       return;
     }
 
-    await prisma.category.delete({ where: { id: categoryId } });
+    await pool.execute('DELETE FROM categories WHERE id = ? AND createdByUserId = ?', [categoryId, userId]);
     res.status(204).send();
   } catch (error) {
     next(error);

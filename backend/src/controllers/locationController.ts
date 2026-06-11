@@ -1,5 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
-import prisma from '../prisma';
+import crypto from 'crypto';
+import mysql from 'mysql2/promise';
+import pool from '../db';
+
+/**
+ * Helper: transforms a flat SQL row (with cat_ prefixed columns) into
+ * the nested `{ ...location, category: { id, name, color } }` shape
+ * that the frontend expects.
+ */
+function nestCategory(row: mysql.RowDataPacket): Record<string, unknown> {
+  const { cat_id, cat_name, cat_color, ...locationFields } = row;
+  return {
+    ...locationFields,
+    category: cat_id
+      ? { id: cat_id, name: cat_name, color: cat_color }
+      : null,
+  };
+}
 
 /** List locations — filterable by categoryId, supports pagination */
 export async function getLocations(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -9,22 +26,44 @@ export async function getLocations(req: Request, res: Response, next: NextFuncti
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
-    const skip = (pageNum - 1) * limitNum;
+    const offset = (pageNum - 1) * limitNum;
 
-    const where: Record<string, unknown> = { createdByUserId: userId };
-    if (categoryId) where['categoryId'] = parseInt(categoryId, 10);
-    if (search) where['name'] = { contains: search };
+    // Build WHERE conditions dynamically
+    const conditions: string[] = ['l.createdByUserId = ?'];
+    const params: (string | number)[] = [userId];
 
-    const [data, total] = await Promise.all([
-      prisma.location.findMany({
-        where,
-        include: { category: true },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limitNum,
-      }),
-      prisma.location.count({ where }),
+    if (categoryId) {
+      conditions.push('l.categoryId = ?');
+      params.push(parseInt(categoryId, 10));
+    }
+    if (search) {
+      conditions.push('l.name LIKE ?');
+      params.push(`%${search}%`);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    // Fetch data and total in parallel
+    const dataParams: (string | number)[] = [...params, String(limitNum), String(offset)];
+
+    const [dataRows, countRows] = await Promise.all([
+      pool.execute<mysql.RowDataPacket[]>(
+        `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
+         FROM locations l
+         LEFT JOIN categories c ON l.categoryId = c.id
+         WHERE ${whereClause}
+         ORDER BY l.createdAt DESC
+         LIMIT ? OFFSET ?`,
+        dataParams
+      ),
+      pool.execute<mysql.RowDataPacket[]>(
+        `SELECT COUNT(*) as total FROM locations l WHERE ${whereClause}`,
+        params
+      ),
     ]);
+
+    const data = dataRows[0].map(nestCategory);
+    const total = Number(countRows[0][0].total);
 
     res.json({ data, total, page: pageNum, limit: limitNum });
   } catch (error) {
@@ -37,24 +76,41 @@ export async function getLocationByCode(req: Request, res: Response, next: NextF
   try {
     const code = req.params['code'] as string;
 
-    const location = await prisma.location.findUnique({
-      where: { uniqueCode: code },
-      include: {
-        category: true,
-        visits: {
-          orderBy: { dateTimestamp: 'desc' },
-          take: 10,
-          include: { user: { select: { id: true, name: true } } },
-        },
-      },
-    });
+    const [locationRows] = await pool.execute<mysql.RowDataPacket[]>(
+      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
+       FROM locations l
+       LEFT JOIN categories c ON l.categoryId = c.id
+       WHERE l.uniqueCode = ?`,
+      [code]
+    );
 
-    if (!location) {
+    if (locationRows.length === 0) {
       res.status(404).json({ error: 'Ubicación no encontrada' });
       return;
     }
 
-    res.json(location);
+    const location = nestCategory(locationRows[0]);
+
+    // Fetch recent visits with user info
+    const [visitRows] = await pool.execute<mysql.RowDataPacket[]>(
+      `SELECT v.*, u.id as user_id, u.name as user_name
+       FROM visits v
+       LEFT JOIN users u ON v.userId = u.id
+       WHERE v.locationId = ?
+       ORDER BY v.dateTimestamp DESC
+       LIMIT 10`,
+      [locationRows[0].id]
+    );
+
+    const visits = visitRows.map((v) => {
+      const { user_id, user_name, ...visitFields } = v;
+      return {
+        ...visitFields,
+        user: user_id ? { id: user_id, name: user_name } : null,
+      };
+    });
+
+    res.json({ ...location, visits });
   } catch (error) {
     next(error);
   }
@@ -66,23 +122,46 @@ export async function getLocationById(req: Request, res: Response, next: NextFun
     const userId = req.user!.id;
     const locationId = parseInt(req.params['id'] as string, 10);
 
-    const location = await prisma.location.findUnique({
-      where: { id: locationId },
-      include: {
-        category: true,
-        collectionLocations: {
-          include: { collection: { select: { id: true, name: true } } },
-        },
-        _count: { select: { visits: true } },
-      },
-    });
+    const [locationRows] = await pool.execute<mysql.RowDataPacket[]>(
+      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
+       FROM locations l
+       LEFT JOIN categories c ON l.categoryId = c.id
+       WHERE l.id = ?`,
+      [locationId]
+    );
 
-    if (!location || location.createdByUserId !== userId) {
+    if (locationRows.length === 0 || locationRows[0].createdByUserId !== userId) {
       res.status(404).json({ error: 'Ubicación no encontrada' });
       return;
     }
 
-    res.json(location);
+    const location = nestCategory(locationRows[0]);
+
+    // Fetch collection associations
+    const [collectionRows] = await pool.execute<mysql.RowDataPacket[]>(
+      `SELECT cl.*, col.id as col_id, col.name as col_name
+       FROM collection_locations cl
+       JOIN collections col ON cl.collectionId = col.id
+       WHERE cl.locationId = ?`,
+      [locationId]
+    );
+
+    const collectionLocations = collectionRows.map((row) => ({
+      ...row,
+      collection: { id: row.col_id, name: row.col_name },
+    }));
+
+    // Fetch visit count
+    const [visitCountRows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT COUNT(*) as count FROM visits WHERE locationId = ?',
+      [locationId]
+    );
+
+    res.json({
+      ...location,
+      collectionLocations,
+      _count: { visits: Number(visitCountRows[0].count) },
+    });
   } catch (error) {
     next(error);
   }
@@ -104,7 +183,11 @@ export async function createLocation(req: Request, res: Response, next: NextFunc
     }
 
     // Verify the category belongs to the user
-    const category = await prisma.category.findUnique({ where: { id: categoryId } });
+    const [catRows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT * FROM categories WHERE id = ?',
+      [categoryId]
+    );
+    const category = catRows[0];
     if (!category || category.createdByUserId !== userId) {
       res.status(400).json({ error: 'Categoría no válida' });
       return;
@@ -113,20 +196,25 @@ export async function createLocation(req: Request, res: Response, next: NextFunc
     // Handle uploaded image
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const location = await prisma.location.create({
-      data: {
-        name,
-        latitude,
-        longitude,
-        categoryId,
-        imageUrl,
-        createdByUserId: userId,
-        // uniqueCode is auto-generated by Prisma @default(uuid())
-      },
-      include: { category: true },
-    });
+    // Generate unique code
+    const uniqueCode = crypto.randomUUID();
 
-    res.status(201).json(location);
+    const [result] = await pool.execute<mysql.ResultSetHeader>(
+      `INSERT INTO locations (name, latitude, longitude, categoryId, imageUrl, uniqueCode, createdByUserId, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(3), NOW(3))`,
+      [name, latitude, longitude, categoryId, imageUrl, uniqueCode, userId]
+    );
+
+    // Fetch the created location with category
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
+       FROM locations l
+       LEFT JOIN categories c ON l.categoryId = c.id
+       WHERE l.id = ?`,
+      [result.insertId]
+    );
+
+    res.status(201).json(nestCategory(rows[0]));
   } catch (error) {
     next(error);
   }
@@ -144,7 +232,11 @@ export async function updateLocation(req: Request, res: Response, next: NextFunc
     const categoryId = body['categoryId'] !== undefined ? parseInt(body['categoryId'], 10) : undefined;
 
     // Verify ownership
-    const location = await prisma.location.findUnique({ where: { id: locationId } });
+    const [locRows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT * FROM locations WHERE id = ?',
+      [locationId]
+    );
+    const location = locRows[0];
     if (!location || location.createdByUserId !== userId) {
       res.status(404).json({ error: 'Ubicación no encontrada' });
       return;
@@ -152,7 +244,11 @@ export async function updateLocation(req: Request, res: Response, next: NextFunc
 
     // Verify category if changed
     if (categoryId !== undefined) {
-      const category = await prisma.category.findUnique({ where: { id: categoryId } });
+      const [catRows] = await pool.execute<mysql.RowDataPacket[]>(
+        'SELECT * FROM categories WHERE id = ?',
+        [categoryId]
+      );
+      const category = catRows[0];
       if (!category || category.createdByUserId !== userId) {
         res.status(400).json({ error: 'Categoría no válida' });
         return;
@@ -162,19 +258,47 @@ export async function updateLocation(req: Request, res: Response, next: NextFunc
     // Handle image update
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
 
-    const updated = await prisma.location.update({
-      where: { id: locationId },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(latitude !== undefined && { latitude }),
-        ...(longitude !== undefined && { longitude }),
-        ...(categoryId !== undefined && { categoryId }),
-        ...(imageUrl !== undefined && { imageUrl }),
-      },
-      include: { category: true },
-    });
+    // Build dynamic SET clause
+    const setClauses: string[] = ['updatedAt = NOW(3)'];
+    const params: (string | number)[] = [];
 
-    res.json(updated);
+    if (name !== undefined) {
+      setClauses.push('name = ?');
+      params.push(name);
+    }
+    if (latitude !== undefined) {
+      setClauses.push('latitude = ?');
+      params.push(latitude);
+    }
+    if (longitude !== undefined) {
+      setClauses.push('longitude = ?');
+      params.push(longitude);
+    }
+    if (categoryId !== undefined) {
+      setClauses.push('categoryId = ?');
+      params.push(categoryId);
+    }
+    if (imageUrl !== undefined) {
+      setClauses.push('imageUrl = ?');
+      params.push(imageUrl);
+    }
+
+    params.push(locationId);
+    await pool.execute(
+      `UPDATE locations SET ${setClauses.join(', ')} WHERE id = ?`,
+      params
+    );
+
+    // Fetch the updated location with category
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
+       FROM locations l
+       LEFT JOIN categories c ON l.categoryId = c.id
+       WHERE l.id = ?`,
+      [locationId]
+    );
+
+    res.json(nestCategory(rows[0]));
   } catch (error) {
     next(error);
   }
@@ -186,14 +310,20 @@ export async function deleteLocation(req: Request, res: Response, next: NextFunc
     const userId = req.user!.id;
     const locationId = parseInt(req.params['id'] as string, 10);
 
-    const location = await prisma.location.findUnique({ where: { id: locationId } });
+    const [locRows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT * FROM locations WHERE id = ?',
+      [locationId]
+    );
+    const location = locRows[0];
     if (!location || location.createdByUserId !== userId) {
       res.status(404).json({ error: 'Ubicación no encontrada' });
       return;
     }
 
-    // Cascade deletes will handle collectionLocations and visits
-    await prisma.location.delete({ where: { id: locationId } });
+    // Delete related records first (visits, collection_locations), then the location
+    await pool.execute('DELETE FROM visits WHERE locationId = ?', [locationId]);
+    await pool.execute('DELETE FROM collection_locations WHERE locationId = ?', [locationId]);
+    await pool.execute('DELETE FROM locations WHERE id = ?', [locationId]);
     res.status(204).send();
   } catch (error) {
     next(error);

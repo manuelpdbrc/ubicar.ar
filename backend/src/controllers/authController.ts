@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
-import prisma from '../prisma';
+import mysql from 'mysql2/promise';
+import pool from '../db';
 import { signToken } from '../middleware/authMiddleware';
 import type { RegisterInput, LoginInput } from '../validators/authSchemas';
 
@@ -19,27 +20,28 @@ export const register = async (
     const { name, email, password } = req.body as RegisterInput;
 
     // Check if email is already taken
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
+    const [existingRows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT id FROM users WHERE email = ?',
+      [email]
+    );
+    if (existingRows.length > 0) {
       res.status(409).json({ error: 'Ya existe una cuenta con ese email' });
       return;
     }
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        globalRole: true,
-      },
-    });
+    const [result] = await pool.execute<mysql.ResultSetHeader>(
+      'INSERT INTO users (name, email, password, globalRole, createdAt, updatedAt) VALUES (?, ?, ?, \'USER\', NOW(3), NOW(3))',
+      [name, email, hashedPassword]
+    );
+
+    const user = {
+      id: result.insertId,
+      name,
+      email,
+      globalRole: 'USER' as const,
+    };
 
     const token = signToken({ id: user.id, globalRole: user.globalRole });
 
@@ -61,7 +63,11 @@ export const login = async (
   try {
     const { email, password } = req.body as LoginInput;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
+    const user = rows[0];
     if (!user) {
       res.status(401).json({ error: 'Email o contraseña incorrectos' });
       return;
@@ -101,16 +107,11 @@ export const getMe = async (
   try {
     const userId = req.user!.id;
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        globalRole: true,
-        createdAt: true,
-      },
-    });
+    const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+      'SELECT id, name, email, globalRole, createdAt FROM users WHERE id = ?',
+      [userId]
+    );
+    const user = rows[0];
 
     if (!user) {
       res.status(404).json({ error: 'Usuario no encontrado' });

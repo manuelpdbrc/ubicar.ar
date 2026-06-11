@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import prisma from '../prisma';
+import mysql from 'mysql2/promise';
+import pool from '../db';
 
 /**
  * Middleware factory to check if the authenticated user has the required
@@ -23,31 +24,30 @@ export function authorizeCollection(...requiredRoles: string[]) {
         return;
       }
 
-      // Check if user is the creator
-      const collection = await prisma.collection.findUnique({
-        where: { id: collectionId },
-        select: { createdByUserId: true },
-      });
+      // Check if the collection exists and get its creator
+      const [collectionRows] = await pool.execute<mysql.RowDataPacket[]>(
+        'SELECT createdByUserId FROM collections WHERE id = ?',
+        [collectionId]
+      );
 
-      if (!collection) {
+      if (collectionRows.length === 0) {
         res.status(404).json({ error: 'Colección no encontrada' });
         return;
       }
 
       // Creator always has access
-      if (collection.createdByUserId === userId) {
+      if (collectionRows[0].createdByUserId === userId) {
         next();
         return;
       }
 
       // Check explicit permissions
-      const permission = await prisma.collectionUserPermission.findUnique({
-        where: {
-          collectionId_userId: { collectionId, userId },
-        },
-      });
+      const [permRows] = await pool.execute<mysql.RowDataPacket[]>(
+        'SELECT role FROM collection_user_permissions WHERE collectionId = ? AND userId = ?',
+        [collectionId, userId]
+      );
 
-      if (!permission || !requiredRoles.includes(permission.role)) {
+      if (permRows.length === 0 || !requiredRoles.includes(permRows[0].role)) {
         res.status(403).json({ error: 'No tenés permisos para esta acción' });
         return;
       }

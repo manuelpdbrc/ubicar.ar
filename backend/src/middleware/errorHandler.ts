@@ -1,12 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
-import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import multer from 'multer';
 
 /**
+ * Shape of mysql2 errors — errno and code are the key discriminators.
+ */
+interface MysqlError extends Error {
+  errno?: number;
+  code?: string;
+  sqlState?: string;
+  sqlMessage?: string;
+}
+
+/**
  * Global Express error handler.
- * Catches known error types (Prisma, Zod, JWT, Multer) and maps them
+ * Catches known error types (mysql2, Zod, JWT, Multer) and maps them
  * to appropriate HTTP status codes. Falls back to 500 for unknown errors.
  */
 export const errorHandler = (
@@ -15,29 +24,21 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  // ── Prisma known request errors ────────────────────────────
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    switch (err.code) {
-      case 'P2002': {
-        const target = (err.meta?.target as string[])?.join(', ') || 'campo';
-        res.status(409).json({
-          error: `Ya existe un registro con ese valor de ${target}`,
-        });
-        return;
-      }
-      case 'P2025': {
-        res.status(404).json({
-          error: 'Registro no encontrado',
-        });
-        return;
-      }
-      default: {
-        res.status(400).json({
-          error: 'Error en la base de datos',
-        });
-        return;
-      }
-    }
+  // ── mysql2 errors ──────────────────────────────────────────
+  const mysqlErr = err as MysqlError;
+
+  if (mysqlErr.errno === 1062 || mysqlErr.code === 'ER_DUP_ENTRY') {
+    res.status(409).json({
+      error: 'Ya existe un registro con ese valor',
+    });
+    return;
+  }
+
+  if (mysqlErr.errno === 1452 || mysqlErr.code === 'ER_NO_REFERENCED_ROW_2') {
+    res.status(400).json({
+      error: 'Referencia inválida: el registro relacionado no existe',
+    });
+    return;
   }
 
   // ── Zod validation errors ──────────────────────────────────
