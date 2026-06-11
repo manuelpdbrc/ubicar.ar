@@ -9,6 +9,8 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { LocationCard } from '../components/locations/LocationCard';
 import { MapView } from '../components/map/MapView';
 import { LocationMarker } from '../components/map/LocationMarker';
+import { useGeolocation } from '../hooks/useGeolocation';
+import { computeDistances } from '../lib/geo';
 import type { Collection, Location, CollectionPermission } from '../types';
 
 export function CollectionDetailPage() {
@@ -19,6 +21,10 @@ export function CollectionDetailPage() {
   const [collection, setCollection] = useState<Collection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'locations' | 'permissions'>('locations');
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+
+  const geo = useGeolocation({ watch: true });
+  const userPosition = geo.latitude && geo.longitude ? { lat: geo.latitude, lng: geo.longitude } : null;
 
   // Permissions state
   const [inviteEmail, setInviteEmail] = useState('');
@@ -114,6 +120,8 @@ export function CollectionDetailPage() {
   const isCreator = collection.userRole === 'CREATOR';
   const rawLocations = (collection.locations as any) || []; // Since the backend directly attached it
   
+  const distances = userPosition ? computeDistances(userPosition.lat, userPosition.lng, rawLocations) : undefined;
+  
   return (
     <div className="animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
       {/* Header */}
@@ -180,7 +188,9 @@ export function CollectionDetailPage() {
               <div style={{ height: '300px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: '1rem', border: '1px solid var(--color-border)' }}>
                 <MapView 
                   locations={rawLocations}
-                  selectedLocationId={rawLocations[0].id}
+                  selectedLocationId={selectedLocationId || rawLocations[0].id}
+                  userPosition={userPosition}
+                  onLocationClick={(loc) => setSelectedLocationId(prev => prev === loc.id ? null : loc.id)}
                 />
               </div>
             )}
@@ -201,7 +211,8 @@ export function CollectionDetailPage() {
                     <div style={{ flex: 1 }}>
                       <LocationCard
                         location={loc}
-                        onClick={() => navigate(`/locations/${loc.id}`)}
+                        distance={distances?.[loc.id]}
+                        onClick={() => setSelectedLocationId(loc.id)}
                         onNavigate={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}`)}
                       />
                     </div>
@@ -226,7 +237,7 @@ export function CollectionDetailPage() {
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <div style={{ padding: '1rem', background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '1.125rem', fontWeight: 600, margin: '0 0 1rem 0' }}>Invitar usuario</h3>
-              <form onSubmit={handleInvite} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <form onSubmit={handleInvite} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: '200px' }}>
                   <Input
                     label="Email"
@@ -238,13 +249,15 @@ export function CollectionDetailPage() {
                   />
                 </div>
                 <div className="form-group" style={{ width: '120px' }}>
-                  <label className="input-label">Rol</label>
-                  <select className="input-field" value={inviteRole} onChange={(e) => setInviteRole(e.target.value as any)}>
+                  <label className="input-label" style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.375rem', display: 'block' }}>Rol</label>
+                  <select className="input-field" value={inviteRole} onChange={(e) => setInviteRole(e.target.value as any)} style={{ height: '42px' }}>
                     <option value="VIEWER">Visualizador</option>
                     <option value="EDITOR">Editor</option>
                   </select>
                 </div>
-                <Button type="submit" variant="primary" isLoading={isInviting}>Invitar</Button>
+                <div style={{ display: 'flex', alignItems: 'flex-end', height: '64px' }}>
+                  <Button type="submit" variant="primary" isLoading={isInviting} style={{ height: '42px' }}>Invitar</Button>
+                </div>
               </form>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: '0.75rem' }}>
                 Si el usuario no tiene cuenta, se le asignará el acceso automáticamente cuando se registre con ese email.

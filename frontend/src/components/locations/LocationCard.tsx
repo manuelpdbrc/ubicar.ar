@@ -24,14 +24,14 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, distance }
       compact
       onClick={onClick ? () => onClick(location) : undefined}
       className="animate-fadeInUp"
-      style={{ padding: '0.625rem 1rem' }}
+      style={{ padding: '0.375rem 0.75rem' }}
     >
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
         {/* Category color dot */}
         <div
           style={{
-            width: '2rem',
-            height: '2rem',
+            width: '1.5rem',
+            height: '1.5rem',
             borderRadius: 'var(--radius-md)',
             background: `${categoryColor}18`,
             display: 'flex',
@@ -42,8 +42,8 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, distance }
         >
           <div
             style={{
-              width: '0.625rem',
-              height: '0.625rem',
+              width: '0.5rem',
+              height: '0.5rem',
               borderRadius: '50%',
               backgroundColor: categoryColor,
             }}
@@ -51,14 +51,14 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, distance }
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <h4 className="truncate" style={{ fontSize: '0.9375rem', fontWeight: 600, margin: 0, flexShrink: 1 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h4 className="truncate" style={{ fontSize: '0.875rem', fontWeight: 600, margin: 0, flexShrink: 1 }}>
             {location.name}
           </h4>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
             {location.category && (
-              <Badge variant="primary" style={{ padding: '0.125rem 0.375rem', fontSize: '0.7rem' }}>
+              <Badge variant="primary" style={{ padding: '0.125rem 0.25rem', fontSize: '0.65rem' }}>
                 {location.category.name}
               </Badge>
             )}
@@ -71,11 +71,11 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, distance }
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: '0.125rem', alignItems: 'center', flexShrink: 0 }}>
           {onEdit && (
             <button
               className="btn btn-ghost btn-icon"
-              style={{ width: '32px', height: '32px', color: 'var(--color-text-secondary)' }}
+              style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-text-secondary)' }}
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(location);
@@ -92,7 +92,7 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, distance }
           {onNavigate && (
             <button
               className="btn btn-ghost btn-icon"
-              style={{ width: '32px', height: '32px', color: 'var(--color-text-secondary)' }}
+              style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-text-secondary)' }}
               onClick={(e) => {
                 e.stopPropagation();
                 onNavigate(location);
