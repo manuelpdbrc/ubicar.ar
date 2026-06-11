@@ -80,7 +80,7 @@ export async function getLocationByCode(req: Request, res: Response, next: NextF
       `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
        FROM locations l
        LEFT JOIN categories c ON l.categoryId = c.id
-       WHERE l.uniqueCode = ?`,
+       WHERE LOWER(TRIM(l.uniqueCode)) = LOWER(TRIM(?))`,
       [code]
     );
 
