@@ -9,12 +9,18 @@ import pool from '../db';
  * that the frontend expects.
  */
 function nestCategory(row: mysql.RowDataPacket): Record<string, unknown> {
-  const { cat_id, cat_name, cat_color, ...locationFields } = row;
+  const { cat_id, cat_name, cat_color, collection_ids, ...locationFields } = row;
+  
+  const collectionLocations = collection_ids 
+    ? String(collection_ids).split(',').map(id => ({ collection: { id: parseInt(id, 10) } }))
+    : [];
+
   return {
     ...locationFields,
     category: cat_id
       ? { id: cat_id, name: cat_name, color: cat_color }
       : null,
+    collectionLocations
   };
 }
 
@@ -48,7 +54,12 @@ export async function getLocations(req: Request, res: Response, next: NextFuncti
 
     const [dataRows, countRows] = await Promise.all([
       pool.execute<mysql.RowDataPacket[]>(
-        `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
+        `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color,
+         (
+           SELECT GROUP_CONCAT(collectionId)
+           FROM collection_locations
+           WHERE locationId = l.id
+         ) as collection_ids
          FROM locations l
          LEFT JOIN categories c ON l.categoryId = c.id
          WHERE ${whereClause}
@@ -78,10 +89,15 @@ export async function getLocationByCode(req: Request, res: Response, next: NextF
     const normalizedCode = rawCode.replace(/[\s-]/g, '').toUpperCase();
 
     const [locationRows] = await pool.execute<mysql.RowDataPacket[]>(
-      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
-       FROM locations l
-       LEFT JOIN categories c ON l.categoryId = c.id
-       WHERE REPLACE(REPLACE(UPPER(l.uniqueCode), '-', ''), ' ', '') = ?`,
+      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color,
+         (
+           SELECT GROUP_CONCAT(collectionId)
+           FROM collection_locations
+           WHERE locationId = l.id
+         ) as collection_ids
+         FROM locations l
+         LEFT JOIN categories c ON l.categoryId = c.id
+         WHERE REPLACE(REPLACE(UPPER(l.uniqueCode), '-', ''), ' ', '') = ?`,
       [normalizedCode]
     );
 
@@ -124,10 +140,15 @@ export async function getLocationById(req: Request, res: Response, next: NextFun
     const locationId = parseInt(req.params['id'] as string, 10);
 
     const [locationRows] = await pool.execute<mysql.RowDataPacket[]>(
-      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
-       FROM locations l
-       LEFT JOIN categories c ON l.categoryId = c.id
-       WHERE l.id = ?`,
+      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color,
+         (
+           SELECT GROUP_CONCAT(collectionId)
+           FROM collection_locations
+           WHERE locationId = l.id
+         ) as collection_ids
+         FROM locations l
+         LEFT JOIN categories c ON l.categoryId = c.id
+         WHERE l.id = ?`,
       [locationId]
     );
 
@@ -232,7 +253,12 @@ export async function createLocation(req: Request, res: Response, next: NextFunc
 
     // Fetch the created location with category
     const [rows] = await pool.execute<mysql.RowDataPacket[]>(
-      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
+      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color,
+       (
+         SELECT GROUP_CONCAT(collectionId)
+         FROM collection_locations
+         WHERE locationId = l.id
+       ) as collection_ids
        FROM locations l
        LEFT JOIN categories c ON l.categoryId = c.id
        WHERE l.id = ?`,
@@ -366,7 +392,12 @@ export async function updateLocation(req: Request, res: Response, next: NextFunc
 
     // Fetch the updated location with category
     const [rows] = await pool.execute<mysql.RowDataPacket[]>(
-      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
+      `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color,
+       (
+         SELECT GROUP_CONCAT(collectionId)
+         FROM collection_locations
+         WHERE locationId = l.id
+       ) as collection_ids
        FROM locations l
        LEFT JOIN categories c ON l.categoryId = c.id
        WHERE l.id = ?`,

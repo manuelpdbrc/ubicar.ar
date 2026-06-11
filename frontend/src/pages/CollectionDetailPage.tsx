@@ -178,15 +178,10 @@ export function CollectionDetailPage() {
             {/* Map */}
             {rawLocations.length > 0 && (
               <div style={{ height: '300px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: '1rem', border: '1px solid var(--color-border)' }}>
-                <MapView center={[rawLocations[0].latitude, rawLocations[0].longitude]} zoom={13}>
-                  {rawLocations.map((loc: any) => (
-                    <LocationMarker
-                      key={loc.id}
-                      location={loc}
-                      onClick={() => {}}
-                    />
-                  ))}
-                </MapView>
+                <MapView 
+                  locations={rawLocations}
+                  selectedLocationId={rawLocations[0].id}
+                />
               </div>
             )}
 

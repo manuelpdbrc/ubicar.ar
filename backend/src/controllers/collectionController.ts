@@ -10,14 +10,24 @@ export async function getCollections(req: Request, res: Response, next: NextFunc
     const userId = req.user!.id;
     const [rows] = await pool.execute<mysql.RowDataPacket[]>(
       `SELECT c.*, 
-        CASE WHEN c.createdByUserId = ? THEN 'CREATOR' ELSE p.role END as userRole
+        CASE WHEN c.createdByUserId = ? THEN 'CREATOR' ELSE p.role END as userRole,
+        (SELECT COUNT(*) FROM collection_locations cl WHERE cl.collectionId = c.id) as locationCount
        FROM collections c
        LEFT JOIN collection_user_permissions p ON p.collectionId = c.id AND p.userId = ?
        WHERE c.createdByUserId = ? OR p.userId = ?
        ORDER BY c.name ASC`,
       [userId, userId, userId, userId]
     );
-    res.json(rows);
+
+    const data = rows.map(row => {
+      const { locationCount, ...col } = row;
+      return {
+        ...col,
+        _count: { locations: Number(locationCount) }
+      };
+    });
+
+    res.json(data);
   } catch (error) {
     next(error);
   }
