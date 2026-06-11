@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
   const [initialFormCoords, setInitialFormCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [currentMapCenter, setCurrentMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [isListExpanded, setIsListExpanded] = useState(false);
 
   const userPosition = useMemo(
@@ -95,7 +96,7 @@ export default function DashboardPage() {
 
   function handleAddNew() {
     setEditLocation(null);
-    setInitialFormCoords(null);
+    setInitialFormCoords(currentMapCenter);
     setShowLocationForm(true);
   }
 
@@ -108,6 +109,7 @@ export default function DashboardPage() {
           userPosition={userPosition}
           onLocationClick={handleMapLocationClick}
           onMapClick={handleMapClick}
+          onCenterChange={(lat, lng) => setCurrentMapCenter({ lat, lng })}
           selectedLocationId={selectedLocationId}
         />
 

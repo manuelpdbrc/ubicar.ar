@@ -12,6 +12,7 @@ interface MapViewProps {
   onLocationClick?: (location: Location) => void;
   onMapClick?: (lat: number, lng: number) => void;
   selectedLocationId?: number | null;
+  onCenterChange?: (lat: number, lng: number) => void;
   className?: string;
 }
 
@@ -108,11 +109,36 @@ function MapClickHandler({ onClick }: { onClick?: (lat: number, lng: number) => 
   return null;
 }
 
+/** Component to track map center */
+function MapCenterHandler({ onCenterChange }: { onCenterChange?: (lat: number, lng: number) => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!onCenterChange) return;
+
+    const handler = () => {
+      const center = map.getCenter();
+      onCenterChange(center.lat, center.lng);
+    };
+
+    // Initial call
+    handler();
+
+    map.on('move', handler);
+    return () => {
+      map.off('move', handler);
+    };
+  }, [map, onCenterChange]);
+
+  return null;
+}
+
 export function MapView({
   locations,
   userPosition,
   onLocationClick,
   onMapClick,
+  onCenterChange,
   selectedLocationId,
   className = '',
 }: MapViewProps) {
@@ -160,6 +186,9 @@ export function MapView({
 
         {/* Map click handler */}
         <MapClickHandler onClick={onMapClick} />
+
+        {/* Center change handler */}
+        <MapCenterHandler onCenterChange={onCenterChange} />
       </MapContainer>
 
       {/* Center crosshair */}
