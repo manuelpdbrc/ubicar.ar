@@ -6,6 +6,7 @@ import { BottomNav } from './BottomNav';
 const SIDEBAR_ITEMS = [
   { path: '/dashboard', icon: '🗺️', label: 'Mapa' },
   { path: '/scanner', icon: '📷', label: 'Escanear QR' },
+  { path: '/qr-generator', icon: '🖨️', label: 'Generar QRs' },
   { path: '/collections', icon: '📁', label: 'Colecciones' },
   { path: '/circuits', icon: '🔄', label: 'Circuitos' },
 ];

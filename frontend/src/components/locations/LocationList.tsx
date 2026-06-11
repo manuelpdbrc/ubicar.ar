@@ -8,6 +8,7 @@ interface LocationListProps {
   isLoading?: boolean;
   onLocationClick?: (location: Location) => void;
   onNavigate?: (location: Location) => void;
+  onLinkQR?: (location: Location) => void;
   onAddClick?: () => void;
   distances?: Map<number, number>;
 }
@@ -17,6 +18,7 @@ export function LocationList({
   isLoading,
   onLocationClick,
   onNavigate,
+  onLinkQR,
   onAddClick,
   distances,
 }: LocationListProps) {
@@ -58,6 +60,7 @@ export function LocationList({
             location={location}
             onClick={onLocationClick}
             onNavigate={onNavigate}
+            onLinkQR={onLinkQR}
             distance={distances?.get(location.id) ?? null}
           />
         </div>

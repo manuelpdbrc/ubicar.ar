@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { api } from '../lib/api';
 import { computeDistances, openGoogleMapsNavigation } from '../lib/geo';
@@ -12,6 +13,7 @@ import type { Location, PaginatedResponse } from '../types';
 import styles from './DashboardPage.module.css';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const geo = useGeolocation({ watch: true });
 
@@ -83,6 +85,10 @@ export default function DashboardPage() {
     openGoogleMapsNavigation(location.latitude, location.longitude);
   }
 
+  function handleLinkQR(location: Location) {
+    navigate(`/scanner?linkLocationId=${location.id}`);
+  }
+
   function handleAddNew() {
     setEditLocation(null);
     setInitialFormCoords(null);
@@ -141,6 +147,7 @@ export default function DashboardPage() {
             isLoading={isLoading}
             onLocationClick={handleLocationClick}
             onNavigate={handleNavigate}
+            onLinkQR={handleLinkQR}
             onAddClick={handleAddNew}
             distances={distances}
           />

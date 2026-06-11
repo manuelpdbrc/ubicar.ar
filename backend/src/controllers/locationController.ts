@@ -227,6 +227,7 @@ export async function updateLocation(req: Request, res: Response, next: NextFunc
     const locationId = parseInt(req.params['id'] as string, 10);
     const body = req.body as Record<string, string>;
     const name = body['name'];
+    const uniqueCode = body['uniqueCode'];
     const latitude = body['latitude'] !== undefined ? parseFloat(body['latitude']) : undefined;
     const longitude = body['longitude'] !== undefined ? parseFloat(body['longitude']) : undefined;
     const categoryId = body['categoryId'] !== undefined ? parseInt(body['categoryId'], 10) : undefined;
@@ -258,6 +259,18 @@ export async function updateLocation(req: Request, res: Response, next: NextFunc
     // Handle image update
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
 
+    // Verify uniqueCode uniqueness if changed
+    if (uniqueCode !== undefined && uniqueCode !== location.uniqueCode) {
+      const [existingRows] = await pool.execute<mysql.RowDataPacket[]>(
+        'SELECT id FROM locations WHERE uniqueCode = ? AND id != ?',
+        [uniqueCode, locationId]
+      );
+      if (existingRows.length > 0) {
+        res.status(409).json({ error: 'El código QR ingresado ya está asociado a otra ubicación' });
+        return;
+      }
+    }
+
     // Build dynamic SET clause
     const setClauses: string[] = ['updatedAt = NOW(3)'];
     const params: (string | number)[] = [];
@@ -265,6 +278,10 @@ export async function updateLocation(req: Request, res: Response, next: NextFunc
     if (name !== undefined) {
       setClauses.push('name = ?');
       params.push(name);
+    }
+    if (uniqueCode !== undefined) {
+      setClauses.push('uniqueCode = ?');
+      params.push(uniqueCode);
     }
     if (latitude !== undefined) {
       setClauses.push('latitude = ?');

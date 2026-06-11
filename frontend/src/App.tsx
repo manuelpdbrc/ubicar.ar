@@ -5,6 +5,9 @@ import { AppLayout } from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
+import { QRGeneratorPage } from './pages/QRGeneratorPage';
+import { ScannerPage } from './pages/ScannerPage';
+import { ScanPage } from './pages/ScanPage';
 import type { ReactNode } from 'react';
 
 // ---- Route Guards ----
@@ -83,12 +86,13 @@ function AppRoutes() {
 
       {/* Protected with AppLayout */}
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-      <Route path="/scanner" element={<ProtectedRoute><PlaceholderPage title="QR Scanner" icon="📷" /></ProtectedRoute>} />
+      <Route path="/qr-generator" element={<ProtectedRoute><QRGeneratorPage /></ProtectedRoute>} />
+      <Route path="/scanner" element={<ProtectedRoute><ScannerPage /></ProtectedRoute>} />
       <Route path="/collections" element={<ProtectedRoute><PlaceholderPage title="Colecciones" icon="📁" /></ProtectedRoute>} />
       <Route path="/circuits" element={<ProtectedRoute><PlaceholderPage title="Circuitos" icon="🔄" /></ProtectedRoute>} />
 
       {/* Public scan landing */}
-      <Route path="/scan/:code" element={<PlaceholderPage title="Scan" icon="📍" />} />
+      <Route path="/scan/:code" element={<ScanPage />} />
 
       {/* 404 */}
       <Route path="*" element={<NotFoundPage />} />
