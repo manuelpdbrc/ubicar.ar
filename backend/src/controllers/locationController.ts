@@ -85,7 +85,7 @@ export async function getLocationByCode(req: Request, res: Response, next: NextF
     );
 
     if (locationRows.length === 0) {
-      res.status(404).json({ error: 'Ubicación no encontrada' });
+      res.status(404).json({ error: 'Ubicación no encontrada', details: [{ field: 'code', message: `Buscado: "${code}"` }] });
       return;
     }
 

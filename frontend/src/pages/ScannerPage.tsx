@@ -39,11 +39,11 @@ export function ScannerPage() {
 
   const handleScan = useCallback((decodedText: string) => {
     // If the scanned text is a full URL from our app, extract the code
-    let code = decodedText;
+    let code = decodedText.trim();
     try {
-      const url = new URL(decodedText);
+      const url = new URL(code);
       if (url.pathname.startsWith('/scan/')) {
-        code = url.pathname.split('/scan/')[1];
+        code = url.pathname.split('/scan/')[1].replace(/\/$/, '');
       }
     } catch {
       // Not a valid URL, assume it's just the code

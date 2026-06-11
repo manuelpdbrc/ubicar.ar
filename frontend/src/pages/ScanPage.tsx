@@ -12,6 +12,7 @@ export function ScanPage() {
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<any>(null);
 
   useEffect(() => {
     async function load() {
@@ -22,6 +23,7 @@ export function ScanPage() {
         setLocation(res.data);
       } catch (err: any) {
         setError(err.message || 'Error al cargar la ubicación');
+        if (err.details) setErrorDetails(err.details);
       } finally {
         setIsLoading(false);
       }
@@ -48,7 +50,12 @@ export function ScanPage() {
             ? 'Este código QR aún no está asociado a ninguna ubicación. Si sos administrador, vinculalo desde la app.' 
             : (error || 'No se encontró la ubicación escaneada.')}
         </p>
-        <Link to="/dashboard">
+        {errorDetails && (
+          <pre style={{ fontSize: '0.75rem', color: 'red', marginTop: '0.5rem', background: '#ffebeb', padding: '0.5rem', borderRadius: '4px' }}>
+            {JSON.stringify(errorDetails, null, 2)}
+          </pre>
+        )}
+        <Link to="/dashboard" style={{ marginTop: '1rem' }}>
           <Button variant="primary">Ir a la App</Button>
         </Link>
       </div>
