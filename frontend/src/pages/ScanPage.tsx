@@ -20,7 +20,7 @@ export function ScanPage() {
         setIsLoading(true);
         // This is a public endpoint, no auth required
         const res = await api.get<Location>(`/api/locations/code/${code}`);
-        setLocation(res.data);
+        setLocation(res);
       } catch (err: any) {
         setError(err.message || 'Error al cargar la ubicación');
         if (err.details) setErrorDetails(err.details);
