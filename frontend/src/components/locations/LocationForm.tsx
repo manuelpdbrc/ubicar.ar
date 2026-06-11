@@ -5,7 +5,7 @@ import { api, ApiRequestError } from '../../lib/api';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
-import type { Location, Category } from '../../types';
+import type { Location, Category, Collection } from '../../types';
 
 const QUICK_COLORS = [
   '#6366F1', '#3B82F6', '#10B981', '#F59E0B',
@@ -37,6 +37,8 @@ export function LocationForm({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { showToast } = useToast();
@@ -49,12 +51,19 @@ export function LocationForm({
 
   const isEditing = !!editLocation;
 
-  // Load categories
+  // Load categories and collections
   useEffect(() => {
     if (!isOpen) return;
     api.get<Category[]>('/api/categories')
       .then(setCategories)
       .catch(() => showToast('Error al cargar categorías', 'error'));
+      
+    api.get<Collection[]>('/api/collections')
+      .then(cols => {
+        // Only show collections where user can add locations (CREATOR or EDITOR)
+        setCollections(cols.filter(c => c.userRole === 'CREATOR' || c.userRole === 'EDITOR'));
+      })
+      .catch(() => console.error('Error loading collections'));
   }, [isOpen, showToast]);
 
   // Populate form for editing or new
@@ -65,12 +74,18 @@ export function LocationForm({
       setLongitude(String(editLocation.longitude));
       setCategoryId(String(editLocation.categoryId));
       setImagePreview(editLocation.imageUrl ?? null);
+      if (editLocation.collectionLocations) {
+        setSelectedCollectionIds(editLocation.collectionLocations.map(cl => cl.collection?.id).filter(id => id !== undefined) as number[]);
+      } else {
+        setSelectedCollectionIds([]);
+      }
     } else {
       setName('');
       setLatitude(initialLat !== undefined ? String(initialLat) : '');
       setLongitude(initialLng !== undefined ? String(initialLng) : '');
       setCategoryId('');
       setImagePreview(null);
+      setSelectedCollectionIds([]);
     }
     setImageFile(null);
     setErrors({});
@@ -146,6 +161,11 @@ export function LocationForm({
       formData.append('latitude', latitude.replace(',', '.'));
       formData.append('longitude', longitude.replace(',', '.'));
       formData.append('categoryId', categoryId);
+      if (selectedCollectionIds.length > 0) {
+        formData.append('collectionIds', selectedCollectionIds.join(','));
+      } else {
+        formData.append('collectionIds', '');
+      }
       if (imageFile) formData.append('image', imageFile);
 
       let location: Location;
@@ -319,6 +339,32 @@ export function LocationForm({
             </div>
           )}
         </div>
+
+        {/* Collections selector */}
+        {collections.length > 0 && (
+          <div className="form-group">
+            <label className="input-label">Añadir a colecciones (opcional)</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem', maxHeight: '120px', overflowY: 'auto', padding: '0.5rem', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              {collections.map(col => (
+                <label key={col.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedCollectionIds.includes(col.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedCollectionIds(prev => [...prev, col.id]);
+                      } else {
+                        setSelectedCollectionIds(prev => prev.filter(id => id !== col.id));
+                      }
+                    }}
+                    style={{ accentColor: 'var(--color-primary)' }}
+                  />
+                  {col.name}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Image upload */}
         <div className="form-group">

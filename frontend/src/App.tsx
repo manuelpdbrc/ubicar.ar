@@ -8,6 +8,8 @@ import DashboardPage from './pages/DashboardPage';
 import { QRGeneratorPage } from './pages/QRGeneratorPage';
 import { ScannerPage } from './pages/ScannerPage';
 import { ScanPage } from './pages/ScanPage';
+import { CollectionsPage } from './pages/CollectionsPage';
+import { CollectionDetailPage } from './pages/CollectionDetailPage';
 import type { ReactNode } from 'react';
 
 // ---- Route Guards ----
@@ -88,7 +90,8 @@ function AppRoutes() {
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/qr-generator" element={<ProtectedRoute><QRGeneratorPage /></ProtectedRoute>} />
       <Route path="/scanner" element={<ProtectedRoute><ScannerPage /></ProtectedRoute>} />
-      <Route path="/collections" element={<ProtectedRoute><PlaceholderPage title="Colecciones" icon="📁" /></ProtectedRoute>} />
+      <Route path="/collections" element={<ProtectedRoute><CollectionsPage /></ProtectedRoute>} />
+      <Route path="/collections/:id" element={<ProtectedRoute><CollectionDetailPage /></ProtectedRoute>} />
       <Route path="/circuits" element={<ProtectedRoute><PlaceholderPage title="Circuitos" icon="🔄" /></ProtectedRoute>} />
 
       {/* Public scan landing */}

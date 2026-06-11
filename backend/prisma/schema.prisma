@@ -104,6 +104,7 @@ model Collection {
 
   locations   CollectionLocation[]
   permissions CollectionUserPermission[]
+  invitations CollectionInvitation[]
   circuits    Circuit[]
 
   @@index([createdByUserId])
@@ -133,6 +134,18 @@ model CollectionUserPermission {
   @@id([collectionId, userId])
   @@index([userId])
   @@map("collection_user_permissions")
+}
+
+model CollectionInvitation {
+  id           Int            @id @default(autoincrement())
+  collectionId Int
+  collection   Collection     @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  email        String         @db.VarChar(255)
+  role         CollectionRole
+  createdAt    DateTime       @default(now())
+
+  @@unique([collectionId, email])
+  @@map("collection_invitations")
 }
 
 model Visit {

@@ -38,6 +38,8 @@ export interface Location {
   createdByUserId: number;
   createdAt?: string;
   updatedAt?: string;
+  collectionLocations?: CollectionLocation[];
+  _count?: { visits: number };
 }
 
 export interface Collection {
@@ -49,6 +51,7 @@ export interface Collection {
   updatedAt?: string;
   locations?: CollectionLocation[];
   permissions?: CollectionPermission[];
+  userRole?: string;
   _count?: { locations: number };
 }
 
@@ -60,10 +63,13 @@ export interface CollectionLocation {
 }
 
 export interface CollectionPermission {
-  collectionId: number;
-  userId: number;
+  collectionId?: number;
+  userId?: number;
   role: CollectionRole;
   user?: User;
+  name?: string;
+  email?: string;
+  status?: 'pending' | 'accepted';
 }
 
 export interface Visit {

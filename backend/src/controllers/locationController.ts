@@ -206,6 +206,30 @@ export async function createLocation(req: Request, res: Response, next: NextFunc
       [name, latitude, longitude, categoryId, imageUrl, uniqueCode, userId]
     );
 
+    const newLocationId = result.insertId;
+
+    // Handle collectionIds (comma separated string)
+    const collectionIdsStr = body['collectionIds'];
+    if (collectionIdsStr) {
+      const collectionIds = collectionIdsStr.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+      for (const colId of collectionIds) {
+        // Verify access to collection
+        const [accessRows] = await pool.execute<mysql.RowDataPacket[]>(
+          `SELECT CASE WHEN createdByUserId = ? THEN 'CREATOR' ELSE role END as userRole
+           FROM collections c
+           LEFT JOIN collection_user_permissions p ON p.collectionId = c.id AND p.userId = ?
+           WHERE c.id = ? AND (c.createdByUserId = ? OR p.userId = ?)`,
+          [userId, userId, colId, userId, userId]
+        );
+        if (accessRows.length > 0 && ['CREATOR', 'EDITOR'].includes(accessRows[0].userRole)) {
+          await pool.execute(
+            'INSERT IGNORE INTO collection_locations (collectionId, locationId, addedAt) VALUES (?, ?, NOW(3))',
+            [colId, newLocationId]
+          );
+        }
+      }
+    }
+
     // Fetch the created location with category
     const [rows] = await pool.execute<mysql.RowDataPacket[]>(
       `SELECT l.*, c.id as cat_id, c.name as cat_name, c.color as cat_color
@@ -232,6 +256,7 @@ export async function updateLocation(req: Request, res: Response, next: NextFunc
     const latitude = body['latitude'] !== undefined ? parseFloat(body['latitude']) : undefined;
     const longitude = body['longitude'] !== undefined ? parseFloat(body['longitude']) : undefined;
     const categoryId = body['categoryId'] !== undefined ? parseInt(body['categoryId'], 10) : undefined;
+    const collectionIdsStr = body['collectionIds'];
 
     // Verify ownership
     const [locRows] = await pool.execute<mysql.RowDataPacket[]>(
@@ -306,6 +331,38 @@ export async function updateLocation(req: Request, res: Response, next: NextFunc
       `UPDATE locations SET ${setClauses.join(', ')} WHERE id = ?`,
       params
     );
+
+    // Handle collections update if provided
+    if (collectionIdsStr !== undefined) {
+      const collectionIds = collectionIdsStr ? collectionIdsStr.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id)) : [];
+      
+      // First, get all collections this user can edit
+      const [editableColRows] = await pool.execute<mysql.RowDataPacket[]>(
+        `SELECT c.id 
+         FROM collections c
+         LEFT JOIN collection_user_permissions p ON p.collectionId = c.id AND p.userId = ?
+         WHERE (c.createdByUserId = ? OR p.role IN ('CREATOR', 'EDITOR'))`,
+        [userId, userId]
+      );
+      const editableColIds = editableColRows.map(r => r.id);
+
+      if (editableColIds.length > 0) {
+        // Delete from editable collections
+        await pool.execute(
+          `DELETE FROM collection_locations WHERE locationId = ? AND collectionId IN (${editableColIds.map(() => '?').join(',')})`,
+          [locationId, ...editableColIds]
+        );
+
+        // Insert into requested collections that are editable
+        const validCollectionIds = collectionIds.filter(id => editableColIds.includes(id));
+        for (const colId of validCollectionIds) {
+          await pool.execute(
+            'INSERT IGNORE INTO collection_locations (collectionId, locationId, addedAt) VALUES (?, ?, NOW(3))',
+            [colId, locationId]
+          );
+        }
+      }
+    }
 
     // Fetch the updated location with category
     const [rows] = await pool.execute<mysql.RowDataPacket[]>(

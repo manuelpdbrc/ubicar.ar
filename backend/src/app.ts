@@ -5,7 +5,7 @@ import path from 'path';
 import authRoutes from './routes/authRoutes';
 import categoryRoutes from './routes/categoryRoutes';
 import locationRoutes from './routes/locationRoutes';
-// TODO: import collectionRoutes from './routes/collectionRoutes';
+import collectionRoutes from './routes/collectionRoutes';
 // TODO: import visitRoutes from './routes/visitRoutes';
 // TODO: import circuitRoutes from './routes/circuitRoutes';
 
@@ -36,6 +36,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/collections', collectionRoutes);
 // TODO: app.use('/api/collections', collectionRoutes);
 // TODO: app.use('/api/visits', visitRoutes);
 // TODO: app.use('/api/circuits', circuitRoutes);
