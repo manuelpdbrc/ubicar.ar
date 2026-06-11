@@ -92,12 +92,16 @@ export async function getLocationById(req: Request, res: Response, next: NextFun
 export async function createLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.id;
-    const { name, latitude, longitude, categoryId } = req.body as {
-      name: string;
-      latitude: number;
-      longitude: number;
-      categoryId: number;
-    };
+    const body = req.body as Record<string, string>;
+    const name = body['name'] ?? '';
+    const latitude = parseFloat(body['latitude'] ?? '');
+    const longitude = parseFloat(body['longitude'] ?? '');
+    const categoryId = parseInt(body['categoryId'] ?? '', 10);
+
+    if (!name.trim() || isNaN(latitude) || isNaN(longitude) || isNaN(categoryId)) {
+      res.status(400).json({ error: 'Datos inválidos: nombre, latitud, longitud y categoría son requeridos' });
+      return;
+    }
 
     // Verify the category belongs to the user
     const category = await prisma.category.findUnique({ where: { id: categoryId } });
@@ -133,12 +137,11 @@ export async function updateLocation(req: Request, res: Response, next: NextFunc
   try {
     const userId = req.user!.id;
     const locationId = parseInt(req.params['id'] as string, 10);
-    const { name, latitude, longitude, categoryId } = req.body as {
-      name?: string;
-      latitude?: number;
-      longitude?: number;
-      categoryId?: number;
-    };
+    const body = req.body as Record<string, string>;
+    const name = body['name'];
+    const latitude = body['latitude'] !== undefined ? parseFloat(body['latitude']) : undefined;
+    const longitude = body['longitude'] !== undefined ? parseFloat(body['longitude']) : undefined;
+    const categoryId = body['categoryId'] !== undefined ? parseInt(body['categoryId'], 10) : undefined;
 
     // Verify ownership
     const location = await prisma.location.findUnique({ where: { id: locationId } });
