@@ -50,6 +50,44 @@ function FlyToLocation({ locationId, locations }: { locationId?: number | null, 
   return null;
 }
 
+/** Component to center map on user position when button is clicked */
+function LocateControl({ position }: { position: { lat: number; lng: number } | null }) {
+  const map = useMap();
+
+  if (!position) return null;
+
+  return (
+    <div className="leaflet-bottom leaflet-right">
+      <div className="leaflet-control leaflet-bar" style={{ margin: '10px' }}>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            map.flyTo([position.lat, position.lng], 16, { duration: 1.0 });
+          }}
+          title="Centrar en mi ubicación"
+          style={{
+            width: '36px',
+            height: '36px',
+            backgroundColor: 'var(--color-surface)',
+            border: 'none',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-md)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--color-primary)',
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Component to handle map click events */
 function MapClickHandler({ onClick }: { onClick?: (lat: number, lng: number) => void }) {
   const map = useMap();
@@ -117,6 +155,9 @@ export function MapView({
         {/* Fly to selected location */}
         <FlyToLocation locationId={selectedLocationId} locations={locations} />
 
+        {/* Locate me button */}
+        <LocateControl position={userPosition ?? null} />
+
         {/* Map click handler */}
         <MapClickHandler onClick={onMapClick} />
       </MapContainer>
@@ -171,7 +212,7 @@ export function MapView({
           height: 28px;
           transform: translate(-50%, -50%);
           pointer-events: none;
-          z-index: 2;
+          z-index: 1000;
         }
 
         /* Vertical line */
