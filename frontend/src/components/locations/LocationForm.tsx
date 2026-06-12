@@ -369,12 +369,38 @@ export function LocationForm({
         {/* Image upload */}
         <div className="form-group">
           <label className="input-label">Imagen (opcional)</label>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => document.getElementById('image-upload-file')?.click()}
+              style={{ flex: 1, padding: '0.5rem' }}
+            >
+              📁 Subir archivo
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => document.getElementById('image-upload-camera')?.click()}
+              style={{ flex: 1, padding: '0.5rem' }}
+            >
+              📷 Tomar foto
+            </Button>
+          </div>
           <input
+            id="image-upload-file"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handleImageChange}
-            className="input-field"
-            style={{ padding: '0.5rem' }}
+            style={{ display: 'none' }}
+          />
+          <input
+            id="image-upload-camera"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            onChange={handleImageChange}
+            style={{ display: 'none' }}
           />
           {imagePreview && (
             <div style={{ marginTop: '0.5rem', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
