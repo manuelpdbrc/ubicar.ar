@@ -119,6 +119,10 @@ export default function DashboardPage() {
           onMapClick={handleMapClick}
           onCenterChange={handleMapCenterChange}
           selectedLocationId={selectedLocationId}
+          onEdit={handleEditLocation}
+          onHistory={setHistoryLocation}
+          onNavigate={handleNavigate}
+          onAddVisit={setAddVisitLocation}
         />
 
         {/* Floating action buttons */}

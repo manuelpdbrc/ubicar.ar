@@ -222,6 +222,10 @@ export function CollectionDetailPage() {
                   userPosition={userPosition}
                   onLocationClick={(loc) => setSelectedLocationId(prev => prev === loc.id ? null : loc.id)}
                   fitAllLocations={true}
+                  onEdit={canEdit ? handleEditLocation : undefined}
+                  onHistory={setHistoryLocation}
+                  onNavigate={handleNavigate}
+                  onAddVisit={setAddVisitLocation}
                 />
               </div>
             )}
