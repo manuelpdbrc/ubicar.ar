@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import type { Location } from '../../types';
@@ -47,16 +47,24 @@ export function LocationMarker({
   onAddVisit
 }: LocationMarkerProps) {
   const color = location.category?.color || '#6366F1';
+  const markerRef = useRef<L.Marker>(null);
 
   const icon = useMemo(
     () => createPinIcon(color, isSelected),
     [color, isSelected]
   );
 
+  useEffect(() => {
+    if (isSelected && markerRef.current) {
+      markerRef.current.openPopup();
+    }
+  }, [isSelected]);
+
   return (
     <Marker
       position={[location.latitude, location.longitude]}
       icon={icon}
+      ref={markerRef}
       eventHandlers={{
         click: () => onClick?.(location),
       }}
