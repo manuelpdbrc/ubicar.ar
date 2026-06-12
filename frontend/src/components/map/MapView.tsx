@@ -150,6 +150,24 @@ function MapClickHandler({ onClick }: { onClick?: (lat: number, lng: number) => 
   return null;
 }
 
+/** Component to handle map drag events to close popups */
+function MapDragHandler() {
+  const map = useMap();
+
+  useEffect(() => {
+    const onDragStart = () => {
+      map.closePopup();
+    };
+
+    map.on('dragstart', onDragStart);
+    return () => {
+      map.off('dragstart', onDragStart);
+    };
+  }, [map]);
+
+  return null;
+}
+
 /** Component to track map center */
 function MapCenterHandler({ onCenterChange }: { onCenterChange?: (lat: number, lng: number) => void }) {
   const map = useMap();
@@ -268,6 +286,9 @@ export function MapView({
 
         {/* Container resize handler */}
         <MapResizer />
+        
+        {/* Close popups on drag */}
+        <MapDragHandler />
       </MapContainer>
 
       {/* Center crosshair */}
