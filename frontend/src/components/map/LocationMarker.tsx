@@ -63,6 +63,11 @@ export function LocationMarker({
     >
       <Popup>
         <div style={{ fontFamily: 'Inter, sans-serif', minWidth: '160px' }}>
+          {location.imageUrl && (
+            <div style={{ marginBottom: '0.5rem', borderRadius: '4px', overflow: 'hidden', height: '100px' }}>
+              <img src={location.imageUrl} alt={location.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          )}
           <strong style={{ fontSize: '0.875rem' }}>{location.name}</strong>
           {location.category && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.25rem' }}>
