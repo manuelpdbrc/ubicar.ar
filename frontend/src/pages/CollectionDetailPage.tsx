@@ -122,6 +122,11 @@ export function CollectionDetailPage() {
   
   const distances = userPosition ? computeDistances(userPosition.lat, userPosition.lng, rawLocations) : undefined;
   
+  const sortedLocations = [...rawLocations].sort((a, b) => {
+    if (!distances) return 0;
+    return (distances.get(a.id) ?? Infinity) - (distances.get(b.id) ?? Infinity);
+  });
+  
   return (
     <div className="animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
       {/* Header */}
@@ -191,6 +196,7 @@ export function CollectionDetailPage() {
                   selectedLocationId={selectedLocationId || rawLocations[0].id}
                   userPosition={userPosition}
                   onLocationClick={(loc) => setSelectedLocationId(prev => prev === loc.id ? null : loc.id)}
+                  fitAllLocations={true}
                 />
               </div>
             )}
@@ -206,12 +212,12 @@ export function CollectionDetailPage() {
               />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {rawLocations.map((loc: any) => (
+                {sortedLocations.map((loc: any) => (
                   <div key={loc.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <div style={{ flex: 1 }}>
                       <LocationCard
                         location={loc}
-                        distance={distances?.[loc.id]}
+                        distance={distances?.get(loc.id) ?? null}
                         onClick={() => setSelectedLocationId(loc.id)}
                         onNavigate={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}`)}
                       />

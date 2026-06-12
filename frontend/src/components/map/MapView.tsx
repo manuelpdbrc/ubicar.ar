@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
-import type { LatLngExpression } from 'leaflet';
+import { latLngBounds, type LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Location } from '../../types';
 import { LocationMarker } from './LocationMarker';
@@ -14,6 +14,7 @@ interface MapViewProps {
   selectedLocationId?: number | null;
   onCenterChange?: (lat: number, lng: number) => void;
   className?: string;
+  fitAllLocations?: boolean;
 }
 
 /** Default center: Buenos Aires */
@@ -21,16 +22,17 @@ const DEFAULT_CENTER: LatLngExpression = [-34.6037, -58.3816];
 const DEFAULT_ZOOM = 13;
 
 /** Component to handle map panning when user position changes */
-function FlyToUser({ position }: { position: { lat: number; lng: number } | null }) {
+function FlyToUser({ position, skip }: { position: { lat: number; lng: number } | null, skip?: boolean }) {
   const map = useMap();
   const hasFlyRef = useRef(false);
 
   useEffect(() => {
+    if (skip) return;
     if (position && !hasFlyRef.current) {
       map.flyTo([position.lat, position.lng], 15, { duration: 1.5 });
       hasFlyRef.current = true;
     }
-  }, [map, position]);
+  }, [map, position, skip]);
 
   return null;
 }
@@ -47,6 +49,23 @@ function FlyToLocation({ locationId, locations }: { locationId?: number | null, 
       }
     }
   }, [locationId, locations, map]);
+
+  return null;
+}
+
+
+/** Component to fit bounds to all locations */
+function FitToLocations({ locations }: { locations: Location[] }) {
+  const map = useMap();
+  const hasFittedRef = useRef(false);
+
+  useEffect(() => {
+    if (locations.length > 0 && !hasFittedRef.current) {
+      const bounds = latLngBounds(locations.map(l => [l.latitude, l.longitude]));
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, duration: 1.5 });
+      hasFittedRef.current = true;
+    }
+  }, [locations, map]);
 
   return null;
 }
@@ -114,19 +133,33 @@ function MapCenterHandler({ onCenterChange }: { onCenterChange?: (lat: number, l
   const map = useMap();
 
   useEffect(() => {
-    if (!onCenterChange) return;
-
     const handler = () => {
       const center = map.getCenter();
-      onCenterChange(center.lat, center.lng);
+      const zoom = map.getZoom();
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem('map_center', JSON.stringify([center.lat, center.lng]));
+        localStorage.setItem('map_zoom', zoom.toString());
+      } catch (e) {
+        // ignore storage errors
+      }
+
+      if (onCenterChange) {
+        onCenterChange(center.lat, center.lng);
+      }
     };
 
     // Initial call
-    handler();
+    if (onCenterChange) {
+      handler();
+    }
 
     map.on('moveend', handler);
+    map.on('zoomend', handler);
     return () => {
       map.off('moveend', handler);
+      map.off('zoomend', handler);
     };
   }, [map, onCenterChange]);
 
@@ -141,16 +174,26 @@ export function MapView({
   onCenterChange,
   selectedLocationId,
   className = '',
+  fitAllLocations = false,
 }: MapViewProps) {
-  const center: LatLngExpression = userPosition
-    ? [userPosition.lat, userPosition.lng]
-    : DEFAULT_CENTER;
+  // Read saved map state
+  let savedCenter: LatLngExpression | undefined;
+  let savedZoom: number | undefined;
+  try {
+    const c = localStorage.getItem('map_center');
+    const z = localStorage.getItem('map_zoom');
+    if (c) savedCenter = JSON.parse(c);
+    if (z) savedZoom = parseInt(z, 10);
+  } catch (e) {}
+
+  const center: LatLngExpression = savedCenter || (userPosition ? [userPosition.lat, userPosition.lng] : DEFAULT_CENTER);
+  const zoom = savedZoom || DEFAULT_ZOOM;
 
   return (
     <div className={`map-container ${className}`}>
       <MapContainer
         center={center}
-        zoom={DEFAULT_ZOOM}
+        zoom={zoom}
         style={{ width: '100%', height: '100%' }}
         zoomControl={false}
         attributionControl={false}
@@ -175,11 +218,14 @@ export function MapView({
           />
         ))}
 
-        {/* Fly to user on first position */}
-        <FlyToUser position={userPosition ?? null} />
+        {/* Fly to user on first position (skip if we loaded a saved position) */}
+        <FlyToUser position={userPosition ?? null} skip={!!savedCenter} />
 
         {/* Fly to selected location */}
         <FlyToLocation locationId={selectedLocationId} locations={locations} />
+
+        {/* Fit to all locations if requested */}
+        {fitAllLocations && <FitToLocations locations={locations} />}
 
         {/* Locate me button */}
         <LocateControl position={userPosition ?? null} />
