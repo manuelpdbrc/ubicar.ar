@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
 import { useToast } from '../../context/ToastContext';
+import { api } from '../../lib/api';
 
 interface VisitFormProps {
   locationId: number;
@@ -56,19 +56,7 @@ export function VisitForm({ locationId, circuitId, onSuccess, onCancel }: VisitF
         data.append('images', img);
       });
 
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/visits`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: data
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Error al guardar la visita');
-      }
+      await api.upload('/api/visits', data);
 
       showToast('Visita registrada correctamente', 'success');
       onSuccess();

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
+import { API_BASE_URL } from '../../config';
 import type { Visit } from '../../types';
 
 interface VisitHistoryModalProps {
@@ -115,10 +116,10 @@ export function VisitHistoryModal({ locationId, locationName, isOpen, onClose }:
                       {visit.images.map(img => (
                         <img 
                           key={img.id}
-                          src={import.meta.env.VITE_API_URL + img.imageUrl}
+                          src={`${API_BASE_URL}${img.imageUrl}`}
                           alt="Foto visita"
                           style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: '1px solid var(--color-border-light)' }}
-                          onClick={() => setSelectedImage(import.meta.env.VITE_API_URL + img.imageUrl)}
+                          onClick={() => setSelectedImage(`${API_BASE_URL}${img.imageUrl}`)}
                         />
                       ))}
                     </div>
