@@ -96,7 +96,7 @@ function LocateControl({ position }: { position: { lat: number; lng: number } | 
 
   return (
     <div className="leaflet-bottom leaflet-right">
-      <div className="leaflet-control leaflet-bar" style={{ margin: '10px', marginBottom: '80px' }}>
+      <div className="leaflet-control leaflet-bar gps-control-btn" style={{ margin: '10px' }}>
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -309,6 +309,18 @@ export function MapView({
 
         .map-container .leaflet-control-zoom a:hover {
           background-color: var(--color-surface-hover) !important;
+        }
+
+        /* ── Adjust bottom controls for mobile panel ── */
+        @media (max-width: 767px) {
+          .map-container .leaflet-bottom {
+            bottom: calc(40% + 4.5rem) !important;
+          }
+        }
+        @media (min-width: 768px) {
+          .map-container .leaflet-bottom {
+            bottom: 1.5rem !important;
+          }
         }
 
         /* ── Crosshair ── */
