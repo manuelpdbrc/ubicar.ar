@@ -93,7 +93,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             display: flex;
             flex-direction: column;
             width: var(--sidebar-width);
-            max-width: 280px;
+            max-width: 340px;
             background-color: var(--color-surface);
             border-right: 1px solid var(--color-border-light);
             padding: 1.25rem;

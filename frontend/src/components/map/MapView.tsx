@@ -41,6 +41,20 @@ function FlyToUser({ position, skip }: { position: { lat: number; lng: number } 
   return null;
 }
 
+/** Component to handle container resize and prevent truncation */
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
+  return null;
+}
+
 /** Component to handle map panning when a location is selected */
 function FlyToLocation({ locationId, locations }: { locationId?: number | null, locations: Location[] }) {
   const map = useMap();
@@ -247,6 +261,9 @@ export function MapView({
 
         {/* Center change handler */}
         <MapCenterHandler onCenterChange={onCenterChange} />
+
+        {/* Container resize handler */}
+        <MapResizer />
       </MapContainer>
 
       {/* Center crosshair */}
