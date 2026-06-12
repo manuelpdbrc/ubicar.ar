@@ -1,5 +1,4 @@
 import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
 import type { Location } from '../../types';
 
 interface LocationCardProps {
@@ -26,14 +25,14 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
       compact
       onClick={onClick ? () => onClick(location) : undefined}
       className="animate-fadeInUp"
-      style={{ padding: '0.375rem 0.75rem' }}
+      style={{ padding: '0.25rem 0.5rem' }}
     >
       <div style={{ display: 'flex', gap: '0.625rem', alignItems: 'center' }}>
         {/* Category color dot */}
         <div
           style={{
-            width: '1.5rem',
-            height: '1.5rem',
+            width: '1.25rem',
+            height: '1.25rem',
             borderRadius: 'var(--radius-md)',
             background: `${categoryColor}18`,
             display: 'flex',
@@ -44,8 +43,8 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
         >
           <div
             style={{
-              width: '0.5rem',
-              height: '0.5rem',
+              width: '0.4rem',
+              height: '0.4rem',
               borderRadius: '50%',
               backgroundColor: categoryColor,
             }}
@@ -53,19 +52,14 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <h4 className="truncate" style={{ fontSize: '0.8rem', fontWeight: 600, margin: 0, flexShrink: 1 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+          <h4 className="truncate" style={{ fontSize: '0.75rem', fontWeight: 600, margin: 0, flexShrink: 1 }}>
             {location.name}
           </h4>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
-            {location.category && (
-              <Badge variant="primary" style={{ padding: '0.1rem 0.25rem', fontSize: '0.6rem' }}>
-                {location.category.name}
-              </Badge>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}>
             {distance != null && (
-              <span className="text-xs font-medium" style={{ color: 'var(--color-text-tertiary)' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 500, color: 'var(--color-text-tertiary)' }}>
                 {formatDistance(distance)}
               </span>
             )}
@@ -77,7 +71,7 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
           {onAddVisit && (
             <button
               className="btn btn-ghost btn-icon"
-              style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-primary)' }}
+              style={{ width: '24px', height: '24px', minHeight: '24px', color: 'var(--color-primary)' }}
               onClick={(e) => {
                 e.stopPropagation();
                 onAddVisit(location);
@@ -85,7 +79,7 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
               title="Registrar visita"
               aria-label={`Registrar visita en ${location.name}`}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                 <circle cx="12" cy="13" r="4"></circle>
               </svg>
@@ -94,7 +88,7 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
           {onHistory && (
             <button
               className="btn btn-ghost btn-icon"
-              style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-text-secondary)' }}
+              style={{ width: '24px', height: '24px', minHeight: '24px', color: 'var(--color-text-secondary)' }}
               onClick={(e) => {
                 e.stopPropagation();
                 onHistory(location);
@@ -102,7 +96,7 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
               title="Historial de visitas"
               aria-label={`Ver historial de ${location.name}`}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
@@ -111,7 +105,7 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
           {onEdit && (
             <button
               className="btn btn-ghost btn-icon"
-              style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-text-secondary)' }}
+              style={{ width: '24px', height: '24px', minHeight: '24px', color: 'var(--color-text-secondary)' }}
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(location);
@@ -119,7 +113,7 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
               title="Editar ubicación"
               aria-label={`Editar ${location.name}`}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
               </svg>
@@ -128,7 +122,7 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
           {onNavigate && (
             <button
               className="btn btn-ghost btn-icon"
-              style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-text-secondary)' }}
+              style={{ width: '24px', height: '24px', minHeight: '24px', color: 'var(--color-text-secondary)' }}
               onClick={(e) => {
                 e.stopPropagation();
                 onNavigate(location);
@@ -136,7 +130,7 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
               title="Navegar con Google Maps"
               aria-label={`Navegar a ${location.name}`}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
               </svg>
             </button>

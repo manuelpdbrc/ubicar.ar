@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [isListExpanded, setIsListExpanded] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
   const [portalElement, setPortalElement] = useState<HTMLElement | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
@@ -46,9 +47,24 @@ export default function DashboardPage() {
     [geo.latitude, geo.longitude]
   );
 
+  const categories = useMemo(() => {
+    const map = new Map<number, { id: number; name: string; color: string }>();
+    locations.forEach(l => {
+      if (l.category) {
+        map.set(l.category.id, l.category);
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [locations]);
+
+  const filteredLocations = useMemo(() => {
+    if (!selectedCategoryId) return locations;
+    return locations.filter(l => l.category?.id === selectedCategoryId);
+  }, [locations, selectedCategoryId]);
+
   const distances = useMemo(
-    () => (userPosition ? computeDistances(userPosition.lat, userPosition.lng, locations) : undefined),
-    [userPosition, locations]
+    () => (userPosition ? computeDistances(userPosition.lat, userPosition.lng, filteredLocations) : undefined),
+    [userPosition, filteredLocations]
   );
 
   const loadLocations = useCallback(async () => {
@@ -130,23 +146,38 @@ export default function DashboardPage() {
       </button>
 
       {/* Panel Header */}
-      <div className={styles.panelHeader}>
-        <div>
+      <div className={styles.panelHeader} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className={styles.panelTitle}>Ubicaciones</h2>
-          <p className={styles.panelSubtitle}>
-            {locations.length} ubicación{locations.length !== 1 ? 'es' : ''}
-            {userPosition && !geo.error && ' · Ordenadas por cercanía'}
-          </p>
+          <Button variant="ghost" size="sm" onClick={() => setShowCategoryManager(true)} title="Gestionar categorías" style={{ padding: '0.25rem' }}>
+            🏷️
+          </Button>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => setShowCategoryManager(true)}>
-          🏷️
-        </Button>
+        
+        <div style={{ marginTop: '0.5rem', marginBottom: '0.25rem' }}>
+          <select
+            className="input"
+            style={{ width: '100%', padding: '0.25rem 0.5rem', fontSize: '0.8rem', height: 'auto', minHeight: '32px' }}
+            value={selectedCategoryId || ''}
+            onChange={(e) => setSelectedCategoryId(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">Todas las categorías</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <p className={styles.panelSubtitle}>
+          {filteredLocations.length} ubicación{filteredLocations.length !== 1 ? 'es' : ''}
+          {userPosition && !geo.error && ' · Ordenadas por cercanía'}
+        </p>
       </div>
 
       {/* Location List */}
       <div className={styles.panelContent}>
         <LocationList
-          locations={locations}
+          locations={filteredLocations}
           isLoading={isLoading}
           onLocationClick={handleLocationClick}
           onNavigate={handleNavigate}
@@ -165,7 +196,7 @@ export default function DashboardPage() {
       {/* Map Area */}
       <div className={styles.mapArea}>
         <MapView
-          locations={locations}
+          locations={filteredLocations}
           userPosition={userPosition}
           onLocationClick={handleMapLocationClick}
           onMapClick={handleMapClick}
