@@ -79,7 +79,10 @@ export const errorHandler = (
 
   // ── Default / unknown errors ───────────────────────────────
   const statusCode = (err as any).statusCode || 500;
-  const message = err.message || 'Error interno del servidor';
+  const message =
+    statusCode === 500 && process.env.NODE_ENV === 'production'
+      ? 'Error interno del servidor'
+      : err.message || 'Error interno del servidor';
 
   res.status(statusCode).json({
     error: message,
