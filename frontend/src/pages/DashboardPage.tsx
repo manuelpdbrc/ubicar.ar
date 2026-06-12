@@ -111,9 +111,7 @@ export default function DashboardPage() {
   }
 
   function handleMapClick(lat: number, lng: number) {
-    setInitialFormCoords({ lat, lng });
-    setEditLocation(null);
-    setShowLocationForm(true);
+    setSelectedLocationId(null);
   }
 
   function handleNavigate(location: Location) {

@@ -96,7 +96,7 @@ function LocateControl({ position }: { position: { lat: number; lng: number } | 
 
   return (
     <div className="leaflet-bottom leaflet-right">
-      <div className="leaflet-control leaflet-bar" style={{ margin: '10px' }}>
+      <div className="leaflet-control leaflet-bar" style={{ margin: '10px', marginBottom: '80px' }}>
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -118,7 +118,11 @@ function LocateControl({ position }: { position: { lat: number; lng: number } | 
           }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            <circle cx="12" cy="12" r="7"></circle>
+            <line x1="12" y1="1" x2="12" y2="5"></line>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="1" y1="12" x2="5" y2="12"></line>
+            <line x1="19" y1="12" x2="23" y2="12"></line>
           </svg>
         </button>
       </div>
