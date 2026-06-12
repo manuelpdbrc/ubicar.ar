@@ -34,16 +34,20 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Nav Items */}
         <nav className="sidebar__nav">
           {SIDEBAR_ITEMS.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
-              }
-            >
-              <span className="sidebar__link-icon">{item.icon}</span>
-              {item.label}
-            </NavLink>
+            <div key={item.path} className="sidebar__item-container">
+              <NavLink
+                to={item.path}
+                className={({ isActive }) =>
+                  `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
+                }
+              >
+                <span className="sidebar__link-icon">{item.icon}</span>
+                {item.label}
+              </NavLink>
+              {item.path === '/dashboard' && (
+                <div id="sidebar-map-portal" className="sidebar__portal"></div>
+              )}
+            </div>
           ))}
         </nav>
 

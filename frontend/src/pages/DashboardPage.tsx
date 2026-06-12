@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { api } from '../lib/api';
@@ -30,6 +31,15 @@ export default function DashboardPage() {
   const [initialFormCoords, setInitialFormCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [currentMapCenter, setCurrentMapCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [isListExpanded, setIsListExpanded] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+  const [portalElement, setPortalElement] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handleResize);
+    setPortalElement(document.getElementById('sidebar-map-portal'));
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const userPosition = useMemo(
     () => (geo.latitude && geo.longitude ? { lat: geo.latitude, lng: geo.longitude } : null),
@@ -108,6 +118,48 @@ export default function DashboardPage() {
     setCurrentMapCenter({ lat, lng });
   }, []);
 
+  const locationPanel = (
+    <div className={`${styles.panel} ${isListExpanded ? styles.panelExpanded : ''}`}>
+      {/* Mobile drag handle */}
+      <button
+        className={styles.dragHandle}
+        onClick={() => setIsListExpanded(!isListExpanded)}
+        aria-label={isListExpanded ? 'Colapsar panel' : 'Expandir panel'}
+      >
+        <span className={styles.dragBar} />
+      </button>
+
+      {/* Panel Header */}
+      <div className={styles.panelHeader}>
+        <div>
+          <h2 className={styles.panelTitle}>Ubicaciones</h2>
+          <p className={styles.panelSubtitle}>
+            {locations.length} ubicación{locations.length !== 1 ? 'es' : ''}
+            {userPosition && !geo.error && ' · Ordenadas por cercanía'}
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => setShowCategoryManager(true)}>
+          🏷️
+        </Button>
+      </div>
+
+      {/* Location List */}
+      <div className={styles.panelContent}>
+        <LocationList
+          locations={locations}
+          isLoading={isLoading}
+          onLocationClick={handleLocationClick}
+          onNavigate={handleNavigate}
+          onEdit={handleEditLocation}
+          onHistory={setHistoryLocation}
+          onAddVisit={setAddVisitLocation}
+          onAddClick={handleAddNew}
+          distances={distances}
+        />
+      </div>
+    </div>
+  );
+
   return (
     <div className={styles.page}>
       {/* Map Area */}
@@ -133,46 +185,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Location Panel */}
-      <div className={`${styles.panel} ${isListExpanded ? styles.panelExpanded : ''}`}>
-        {/* Mobile drag handle */}
-        <button
-          className={styles.dragHandle}
-          onClick={() => setIsListExpanded(!isListExpanded)}
-          aria-label={isListExpanded ? 'Colapsar panel' : 'Expandir panel'}
-        >
-          <span className={styles.dragBar} />
-        </button>
-
-        {/* Panel Header */}
-        <div className={styles.panelHeader}>
-          <div>
-            <h2 className={styles.panelTitle}>Ubicaciones</h2>
-            <p className={styles.panelSubtitle}>
-              {locations.length} ubicación{locations.length !== 1 ? 'es' : ''}
-              {userPosition && !geo.error && ' · Ordenadas por cercanía'}
-            </p>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => setShowCategoryManager(true)}>
-            🏷️
-          </Button>
-        </div>
-
-        {/* Location List */}
-        <div className={styles.panelContent}>
-          <LocationList
-            locations={locations}
-            isLoading={isLoading}
-            onLocationClick={handleLocationClick}
-            onNavigate={handleNavigate}
-            onEdit={handleEditLocation}
-            onHistory={setHistoryLocation}
-            onAddVisit={setAddVisitLocation}
-            onAddClick={handleAddNew}
-            distances={distances}
-          />
-        </div>
-      </div>
+      {/* Location Panel (Portal on desktop, Bottom Sheet on mobile) */}
+      {isDesktop && portalElement ? createPortal(locationPanel, portalElement) : locationPanel}
 
       {/* Modals */}
       <LocationForm

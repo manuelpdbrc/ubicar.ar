@@ -54,13 +54,13 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
 
         {/* Content */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <h4 className="truncate" style={{ fontSize: '0.875rem', fontWeight: 600, margin: 0, flexShrink: 1 }}>
+          <h4 className="truncate" style={{ fontSize: '0.8rem', fontWeight: 600, margin: 0, flexShrink: 1 }}>
             {location.name}
           </h4>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
             {location.category && (
-              <Badge variant="primary" style={{ padding: '0.125rem 0.25rem', fontSize: '0.65rem' }}>
+              <Badge variant="primary" style={{ padding: '0.1rem 0.25rem', fontSize: '0.6rem' }}>
                 {location.category.name}
               </Badge>
             )}
