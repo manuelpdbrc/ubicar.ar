@@ -8,6 +8,7 @@ interface LocationCardProps {
   onNavigate?: (location: Location) => void;
   onEdit?: (location: Location) => void;
   onHistory?: (location: Location) => void;
+  onAddVisit?: (location: Location) => void;
   distance?: number | null;
 }
 
@@ -16,7 +17,7 @@ function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(1)} km`;
 }
 
-export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory, distance }: LocationCardProps) {
+export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory, onAddVisit, distance }: LocationCardProps) {
   const categoryColor = location.category?.color || '#6366F1';
 
   return (
@@ -73,6 +74,23 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory,
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '0.125rem', alignItems: 'center', flexShrink: 0 }}>
+          {onAddVisit && (
+            <button
+              className="btn btn-ghost btn-icon"
+              style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-primary)' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddVisit(location);
+              }}
+              title="Registrar visita"
+              aria-label={`Registrar visita en ${location.name}`}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+            </button>
+          )}
           {onHistory && (
             <button
               className="btn btn-ghost btn-icon"

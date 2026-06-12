@@ -13,6 +13,10 @@ interface MapViewProps {
   onMapClick?: (lat: number, lng: number) => void;
   selectedLocationId?: number | null;
   onCenterChange?: (lat: number, lng: number) => void;
+  onEdit?: (location: Location) => void;
+  onHistory?: (location: Location) => void;
+  onNavigate?: (location: Location) => void;
+  onAddVisit?: (location: Location) => void;
   className?: string;
   fitAllLocations?: boolean;
 }
@@ -172,6 +176,10 @@ export function MapView({
   onLocationClick,
   onMapClick,
   onCenterChange,
+  onEdit,
+  onHistory,
+  onNavigate,
+  onAddVisit,
   selectedLocationId,
   className = '',
   fitAllLocations = false,
@@ -215,6 +223,10 @@ export function MapView({
             location={location}
             isSelected={selectedLocationId === location.id}
             onClick={onLocationClick}
+            onEdit={onEdit}
+            onHistory={onHistory}
+            onNavigate={onNavigate}
+            onAddVisit={onAddVisit}
           />
         ))}
 

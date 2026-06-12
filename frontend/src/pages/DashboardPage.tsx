@@ -10,6 +10,7 @@ import { LocationForm } from '../components/locations/LocationForm';
 import { CategoryManager } from '../components/categories/CategoryManager';
 import { MapView } from '../components/map/MapView';
 import { VisitHistoryModal } from '../components/visits/VisitHistoryModal';
+import { VisitFormModal } from '../components/visits/VisitFormModal';
 import type { Location, PaginatedResponse } from '../types';
 import styles from './DashboardPage.module.css';
 
@@ -24,6 +25,7 @@ export default function DashboardPage() {
   const [editLocation, setEditLocation] = useState<Location | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [historyLocation, setHistoryLocation] = useState<Location | null>(null);
+  const [addVisitLocation, setAddVisitLocation] = useState<Location | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
   const [initialFormCoords, setInitialFormCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [currentMapCenter, setCurrentMapCenter] = useState<{ lat: number; lng: number } | null>(null);
@@ -161,6 +163,7 @@ export default function DashboardPage() {
             onNavigate={handleNavigate}
             onEdit={handleEditLocation}
             onHistory={setHistoryLocation}
+            onAddVisit={setAddVisitLocation}
             onAddClick={handleAddNew}
             distances={distances}
           />
@@ -188,6 +191,19 @@ export default function DashboardPage() {
           locationName={historyLocation.name}
           isOpen={true}
           onClose={() => setHistoryLocation(null)}
+        />
+      )}
+
+      {addVisitLocation && (
+        <VisitFormModal
+          locationId={addVisitLocation.id}
+          locationName={addVisitLocation.name}
+          isOpen={true}
+          onClose={() => setAddVisitLocation(null)}
+          onSuccess={() => {
+            // Optional: Reload logic or show toast (already handled inside VisitForm)
+            loadLocations(); // Refresh to update visits count or cache
+          }}
         />
       )}
     </div>

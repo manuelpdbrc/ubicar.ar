@@ -9,6 +9,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { LocationCard } from '../components/locations/LocationCard';
 import { LocationList } from '../components/locations/LocationList';
 import { VisitHistoryModal } from '../components/visits/VisitHistoryModal';
+import { VisitFormModal } from '../components/visits/VisitFormModal';
 import { MapView } from '../components/map/MapView';
 import { LocationMarker } from '../components/map/LocationMarker';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -26,6 +27,7 @@ export function CollectionDetailPage() {
   const [activeTab, setActiveTab] = useState<'locations' | 'permissions'>('locations');
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
   const [historyLocation, setHistoryLocation] = useState<Location | null>(null);
+  const [addVisitLocation, setAddVisitLocation] = useState<Location | null>(null);
 
   const geo = useGeolocation({ watch: true });
   const userPosition = geo.latitude && geo.longitude ? { lat: geo.latitude, lng: geo.longitude } : null;
@@ -141,6 +143,17 @@ export function CollectionDetailPage() {
           onClose={() => setHistoryLocation(null)}
         />
       )}
+      {addVisitLocation && (
+        <VisitFormModal
+          locationId={addVisitLocation.id}
+          locationName={addVisitLocation.name}
+          isOpen={true}
+          onClose={() => setAddVisitLocation(null)}
+          onSuccess={() => {
+            loadCollection();
+          }}
+        />
+      )}
       {/* Header */}
       <div style={{ padding: '1rem 1rem 0 1rem', background: 'var(--color-bg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -233,6 +246,7 @@ export function CollectionDetailPage() {
                         onClick={() => setSelectedLocationId(loc.id)}
                         onNavigate={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}`)}
                         onHistory={() => setHistoryLocation(loc)}
+                        onAddVisit={() => setAddVisitLocation(loc)}
                       />
                     </div>
                     {canEdit && (

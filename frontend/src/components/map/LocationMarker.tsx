@@ -7,6 +7,10 @@ interface LocationMarkerProps {
   location: Location;
   isSelected?: boolean;
   onClick?: (location: Location) => void;
+  onNavigate?: (location: Location) => void;
+  onEdit?: (location: Location) => void;
+  onHistory?: (location: Location) => void;
+  onAddVisit?: (location: Location) => void;
 }
 
 /** Create a colored SVG pin marker icon */
@@ -33,7 +37,15 @@ function createPinIcon(color: string, isSelected: boolean): L.DivIcon {
   });
 }
 
-export function LocationMarker({ location, isSelected = false, onClick }: LocationMarkerProps) {
+export function LocationMarker({ 
+  location, 
+  isSelected = false, 
+  onClick,
+  onNavigate,
+  onEdit,
+  onHistory,
+  onAddVisit
+}: LocationMarkerProps) {
   const color = location.category?.color || '#6366F1';
 
   const icon = useMemo(
@@ -68,8 +80,74 @@ export function LocationMarker({ location, isSelected = false, onClick }: Locati
               </span>
             </div>
           )}
-          <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+          <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: '0.25rem', marginBottom: '0.75rem' }}>
             {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+          </div>
+          
+          <div style={{ display: 'flex', gap: '0.125rem', alignItems: 'center', flexShrink: 0, justifyContent: 'flex-start', marginLeft: '-0.375rem' }}>
+            {onAddVisit && (
+              <button
+                className="btn btn-ghost btn-icon btn-sm"
+                style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-primary)' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddVisit(location);
+                }}
+                title="Registrar visita"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+              </button>
+            )}
+            {onHistory && (
+              <button
+                className="btn btn-ghost btn-icon btn-sm"
+                style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-text-secondary)' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onHistory(location);
+                }}
+                title="Historial de visitas"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </button>
+            )}
+            {onEdit && (
+              <button
+                className="btn btn-ghost btn-icon btn-sm"
+                style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-text-secondary)' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(location);
+                }}
+                title="Editar ubicación"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+              </button>
+            )}
+            {onNavigate && (
+              <button
+                className="btn btn-ghost btn-icon btn-sm"
+                style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-text-secondary)' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate(location);
+                }}
+                title="Navegar con Google Maps"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </Popup>

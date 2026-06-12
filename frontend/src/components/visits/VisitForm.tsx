@@ -82,8 +82,6 @@ export function VisitForm({ locationId, circuitId, onSuccess, onCancel }: VisitF
   return (
     <form onSubmit={handleSubmit} className="visit-form">
       <div className="form-content">
-        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem', fontWeight: 600 }}>Registro de Visita</h3>
-        
         {/* Future proofing: Dynamic fields could be rendered here based on circuit schema */}
         {/* <DynamicFields schema={circuitSchema} value={formData} onChange={setFormData} /> */}
 
