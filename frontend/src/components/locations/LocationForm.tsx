@@ -105,6 +105,24 @@ export function LocationForm({
     }
   }
 
+  function handleUseGPS() {
+    if (!navigator.geolocation) {
+      showToast('Tu navegador no soporta geolocalización', 'error');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(String(position.coords.latitude));
+        setLongitude(String(position.coords.longitude));
+        showToast('Coordenadas actualizadas', 'success');
+      },
+      () => {
+        showToast('No se pudo obtener la ubicación GPS', 'error');
+      },
+      { enableHighAccuracy: true }
+    );
+  }
+
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors['name'] = 'El nombre es obligatorio';
@@ -227,8 +245,19 @@ export function LocationForm({
             required
           />
         </div>
+        <div style={{ marginTop: '0.5rem', marginBottom: '0.75rem' }}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleUseGPS}
+            style={{ width: '100%', padding: '0.5rem' }}
+          >
+            📍 Utilizar Coordenadas GPS actuales
+          </Button>
+        </div>
         {!latitude && !longitude && (
-          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: '-0.5rem', marginBottom: '0.75rem' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', marginTop: '-0.25rem', marginBottom: '0.75rem' }}>
             💡 Tocá en el mapa para completar las coordenadas automáticamente
           </p>
         )}
