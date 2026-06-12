@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { VisitForm } from '../components/visits/VisitForm';
 import type { Location } from '../types';
 
 export function ScanPage() {
@@ -13,6 +14,7 @@ export function ScanPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<any>(null);
+  const [showVisitForm, setShowVisitForm] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -99,7 +101,15 @@ export function ScanPage() {
           </div>
 
           <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {!isAuthenticated ? (
+            {showVisitForm ? (
+              <VisitForm
+                locationId={location.id}
+                onSuccess={() => {
+                  setShowVisitForm(false);
+                }}
+                onCancel={() => setShowVisitForm(false)}
+              />
+            ) : !isAuthenticated ? (
               <div style={{ background: 'var(--color-bg)', padding: '1rem', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
                 <p style={{ fontSize: '0.875rem', marginBottom: '1rem' }}>
                   Iniciá sesión para registrar una visita a esta ubicación.
@@ -109,16 +119,18 @@ export function ScanPage() {
                 </Link>
               </div>
             ) : (
-              <Button variant="primary" size="lg" style={{ width: '100%' }}>
+              <Button variant="primary" size="lg" style={{ width: '100%' }} onClick={() => setShowVisitForm(true)}>
                 📸 Registrar Visita
               </Button>
             )}
             
-            <a href={`https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-              <Button variant="outline" style={{ width: '100%' }}>
-                🧭 Cómo llegar
-              </Button>
-            </a>
+            {!showVisitForm && (
+              <a href={`https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                <Button variant="outline" style={{ width: '100%' }}>
+                  🧭 Cómo llegar
+                </Button>
+              </a>
+            )}
           </div>
         </div>
       </div>

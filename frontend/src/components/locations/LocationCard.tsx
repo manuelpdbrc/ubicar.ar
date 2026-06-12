@@ -7,6 +7,7 @@ interface LocationCardProps {
   onClick?: (location: Location) => void;
   onNavigate?: (location: Location) => void;
   onEdit?: (location: Location) => void;
+  onHistory?: (location: Location) => void;
   distance?: number | null;
 }
 
@@ -15,7 +16,7 @@ function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(1)} km`;
 }
 
-export function LocationCard({ location, onClick, onNavigate, onEdit, distance }: LocationCardProps) {
+export function LocationCard({ location, onClick, onNavigate, onEdit, onHistory, distance }: LocationCardProps) {
   const categoryColor = location.category?.color || '#6366F1';
 
   return (
@@ -72,6 +73,23 @@ export function LocationCard({ location, onClick, onNavigate, onEdit, distance }
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '0.125rem', alignItems: 'center', flexShrink: 0 }}>
+          {onHistory && (
+            <button
+              className="btn btn-ghost btn-icon"
+              style={{ width: '28px', height: '28px', minHeight: '28px', color: 'var(--color-text-secondary)' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onHistory(location);
+              }}
+              title="Historial de visitas"
+              aria-label={`Ver historial de ${location.name}`}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </button>
+          )}
           {onEdit && (
             <button
               className="btn btn-ghost btn-icon"

@@ -9,6 +9,7 @@ import { LocationList } from '../components/locations/LocationList';
 import { LocationForm } from '../components/locations/LocationForm';
 import { CategoryManager } from '../components/categories/CategoryManager';
 import { MapView } from '../components/map/MapView';
+import { VisitHistoryModal } from '../components/visits/VisitHistoryModal';
 import type { Location, PaginatedResponse } from '../types';
 import styles from './DashboardPage.module.css';
 
@@ -22,6 +23,7 @@ export default function DashboardPage() {
   const [showLocationForm, setShowLocationForm] = useState(false);
   const [editLocation, setEditLocation] = useState<Location | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [historyLocation, setHistoryLocation] = useState<Location | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
   const [initialFormCoords, setInitialFormCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [currentMapCenter, setCurrentMapCenter] = useState<{ lat: number; lng: number } | null>(null);
@@ -158,6 +160,7 @@ export default function DashboardPage() {
             onLocationClick={handleLocationClick}
             onNavigate={handleNavigate}
             onEdit={handleEditLocation}
+            onHistory={setHistoryLocation}
             onAddClick={handleAddNew}
             distances={distances}
           />
@@ -178,6 +181,15 @@ export default function DashboardPage() {
         isOpen={showCategoryManager}
         onClose={() => setShowCategoryManager(false)}
       />
+
+      {historyLocation && (
+        <VisitHistoryModal
+          locationId={historyLocation.id}
+          locationName={historyLocation.name}
+          isOpen={true}
+          onClose={() => setHistoryLocation(null)}
+        />
+      )}
     </div>
   );
 }

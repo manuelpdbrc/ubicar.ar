@@ -149,23 +149,35 @@ model CollectionInvitation {
 }
 
 model Visit {
-  id            Int       @id @default(autoincrement())
-  clientId      String?   @unique @db.VarChar(36)
+  id            Int          @id @default(autoincrement())
   locationId    Int
-  location      Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  location      Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
   userId        Int
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dateTimestamp DateTime  @default(now())
-  comment       String?   @db.Text
-  imageUrl      String?   @db.VarChar(500)
-  type          VisitType @default(SPONTANEOUS)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateTimestamp DateTime     @default(now())
+  comment       String?      @db.Text
+  formData      Json?
+  type          VisitType    @default(SPONTANEOUS)
   circuitId     Int?
-  circuit       Circuit?  @relation(fields: [circuitId], references: [id], onDelete: SetNull)
+  circuit       Circuit?     @relation(fields: [circuitId], references: [id], onDelete: SetNull)
+
+  images        VisitImage[]
 
   @@index([locationId])
   @@index([userId])
   @@index([circuitId])
   @@map("visits")
+}
+
+model VisitImage {
+  id        Int      @id @default(autoincrement())
+  visitId   Int
+  visit     Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  imageUrl  String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+
+  @@index([visitId])
+  @@map("visit_images")
 }
 
 model Circuit {

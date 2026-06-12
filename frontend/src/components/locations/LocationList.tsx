@@ -9,6 +9,7 @@ interface LocationListProps {
   onLocationClick?: (location: Location) => void;
   onNavigate?: (location: Location) => void;
   onEdit?: (location: Location) => void;
+  onHistory?: (location: Location) => void;
   onAddClick?: () => void;
   distances?: Map<number, number>;
 }
@@ -19,6 +20,7 @@ export function LocationList({
   onLocationClick,
   onNavigate,
   onEdit,
+  onHistory,
   onAddClick,
   distances,
 }: LocationListProps) {
@@ -61,6 +63,7 @@ export function LocationList({
             onClick={onLocationClick}
             onNavigate={onNavigate}
             onEdit={onEdit}
+            onHistory={onHistory}
             distance={distances?.get(location.id) ?? null}
           />
         </div>

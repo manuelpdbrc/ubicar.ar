@@ -7,6 +7,8 @@ import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LocationCard } from '../components/locations/LocationCard';
+import { LocationList } from '../components/locations/LocationList';
+import { VisitHistoryModal } from '../components/visits/VisitHistoryModal';
 import { MapView } from '../components/map/MapView';
 import { LocationMarker } from '../components/map/LocationMarker';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -20,8 +22,10 @@ export function CollectionDetailPage() {
   
   const [collection, setCollection] = useState<Collection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
   const [activeTab, setActiveTab] = useState<'locations' | 'permissions'>('locations');
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+  const [historyLocation, setHistoryLocation] = useState<Location | null>(null);
 
   const geo = useGeolocation({ watch: true });
   const userPosition = geo.latitude && geo.longitude ? { lat: geo.latitude, lng: geo.longitude } : null;
@@ -129,6 +133,14 @@ export function CollectionDetailPage() {
   
   return (
     <div className="animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
+      {historyLocation && (
+        <VisitHistoryModal
+          locationId={historyLocation.id}
+          locationName={historyLocation.name}
+          isOpen={true}
+          onClose={() => setHistoryLocation(null)}
+        />
+      )}
       {/* Header */}
       <div style={{ padding: '1rem 1rem 0 1rem', background: 'var(--color-bg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -220,6 +232,7 @@ export function CollectionDetailPage() {
                         distance={distances?.get(loc.id) ?? null}
                         onClick={() => setSelectedLocationId(loc.id)}
                         onNavigate={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}`)}
+                        onHistory={() => setHistoryLocation(loc)}
                       />
                     </div>
                     {canEdit && (

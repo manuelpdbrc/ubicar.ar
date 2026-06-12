@@ -72,19 +72,25 @@ export interface CollectionPermission {
   status?: 'pending' | 'accepted';
 }
 
+export interface VisitImage {
+  id: number;
+  imageUrl: string;
+  createdAt: string;
+}
+
 export interface Visit {
   id: number;
-  clientId: string | null;
   locationId: number;
   location?: Location;
   userId: number;
   user?: User;
   dateTimestamp: string;
   comment: string | null;
-  imageUrl: string | null;
+  formData?: any;
   type: VisitType;
   circuitId: number | null;
   circuit?: Circuit;
+  images?: VisitImage[];
 }
 
 export interface Circuit {
@@ -122,15 +128,4 @@ export interface PaginatedResponse<T> {
   limit: number;
 }
 
-// ---- Offline ----
 
-export interface OfflineVisit {
-  id?: number;
-  clientId: string;
-  locationUniqueCode: string;
-  comment: string | null;
-  imageBlob: Blob | null;
-  type: VisitType;
-  circuitId: number | null;
-  createdAt: string;
-}
