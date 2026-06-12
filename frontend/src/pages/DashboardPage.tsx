@@ -100,6 +100,10 @@ export default function DashboardPage() {
     setShowLocationForm(true);
   }
 
+  const handleMapCenterChange = useCallback((lat: number, lng: number) => {
+    setCurrentMapCenter({ lat, lng });
+  }, []);
+
   return (
     <div className={styles.page}>
       {/* Map Area */}
@@ -109,7 +113,7 @@ export default function DashboardPage() {
           userPosition={userPosition}
           onLocationClick={handleMapLocationClick}
           onMapClick={handleMapClick}
-          onCenterChange={(lat, lng) => setCurrentMapCenter({ lat, lng })}
+          onCenterChange={handleMapCenterChange}
           selectedLocationId={selectedLocationId}
         />
 

@@ -124,9 +124,9 @@ function MapCenterHandler({ onCenterChange }: { onCenterChange?: (lat: number, l
     // Initial call
     handler();
 
-    map.on('move', handler);
+    map.on('moveend', handler);
     return () => {
-      map.off('move', handler);
+      map.off('moveend', handler);
     };
   }, [map, onCenterChange]);
 
