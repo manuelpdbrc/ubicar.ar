@@ -22,8 +22,8 @@ export async function createVisit(req: Request, res: Response, next: NextFunctio
 
     // Insert visit
     const [result] = await pool.execute<mysql.ResultSetHeader>(
-      `INSERT INTO visits (locationId, userId, dateTimestamp, type, circuitId, comment, formData)
-       VALUES (?, ?, NOW(3), ?, ?, ?, ?)`,
+      `INSERT INTO visits (locationId, userId, dateTimestamp, type, circuitId, comment, formData, updatedAt)
+       VALUES (?, ?, NOW(3), ?, ?, ?, ?, NOW(3))`,
       [
         locationId, 
         userId, 
