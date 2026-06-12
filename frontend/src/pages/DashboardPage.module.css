@@ -20,7 +20,7 @@
 /* ── FAB ────────────────────────────────────── */
 .fab {
   position: absolute;
-  bottom: calc(40% + 0.75rem);
+  bottom: 1rem;
   right: 1rem;
   z-index: var(--z-sticky);
 }
@@ -31,10 +31,8 @@
 
 /* ── Panel (Mobile: bottom sheet, Desktop: sidebar) ── */
 .panel {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
+  flex-shrink: 0;
   z-index: var(--z-dropdown);
   background-color: var(--color-surface);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
@@ -48,6 +46,7 @@
 
 .panelExpanded {
   max-height: 80%;
+  height: 80%;
 }
 
 /* ── Drag Handle (mobile only) ──────────────── */

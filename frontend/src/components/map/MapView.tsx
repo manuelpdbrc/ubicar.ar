@@ -314,7 +314,7 @@ export function MapView({
         /* ── Adjust bottom controls for mobile panel ── */
         @media (max-width: 767px) {
           .map-container .leaflet-bottom {
-            bottom: calc(40% + 4.5rem) !important;
+            bottom: 4.5rem !important;
           }
         }
         @media (min-width: 768px) {
