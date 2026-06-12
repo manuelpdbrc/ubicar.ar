@@ -63,6 +63,7 @@ function FlyToLocation({ locationId, locations }: { locationId?: number | null, 
     if (locationId) {
       const loc = locations.find(l => l.id === locationId);
       if (loc) {
+        map.closePopup();
         map.flyTo([loc.latitude, loc.longitude], 18, { duration: 1.0 });
       }
     }
