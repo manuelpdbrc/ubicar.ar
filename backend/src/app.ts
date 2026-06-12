@@ -44,7 +44,7 @@ app.use('/api', visitRoutes); // Mounted at /api because it has /api/visits and 
 // TODO: app.use('/api/circuits', circuitRoutes);
 
 // ─── Catch-all for unknown API routes → 404 JSON ────────────
-app.all('/api/*', (_req, res) => {
+app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'Ruta de API no encontrada' });
 });
 
@@ -52,7 +52,7 @@ app.all('/api/*', (_req, res) => {
 const publicDir = path.join(process.cwd(), 'public');
 app.use(express.static(publicDir));
 
-app.get('*', (_req, res) => {
+app.use((_req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'), (err) => {
     if (err) {
       // No frontend build available yet — just send a plain 200

@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMe = exports.login = exports.register = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const prisma_1 = __importDefault(require("../prisma"));
+const db_1 = __importDefault(require("../db"));
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const BCRYPT_ROUNDS = 12;
 /**
@@ -16,25 +16,19 @@ const register = async (req, res, next) => {
     try {
         const { name, email, password } = req.body;
         // Check if email is already taken
-        const existing = await prisma_1.default.user.findUnique({ where: { email } });
-        if (existing) {
+        const [existingRows] = await db_1.default.execute('SELECT id FROM users WHERE email = ?', [email]);
+        if (existingRows.length > 0) {
             res.status(409).json({ error: 'Ya existe una cuenta con ese email' });
             return;
         }
         const hashedPassword = await bcryptjs_1.default.hash(password, BCRYPT_ROUNDS);
-        const user = await prisma_1.default.user.create({
-            data: {
-                name,
-                email,
-                password: hashedPassword,
-            },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                globalRole: true,
-            },
-        });
+        const [result] = await db_1.default.execute('INSERT INTO users (name, email, password, globalRole, createdAt, updatedAt) VALUES (?, ?, ?, \'USER\', NOW(3), NOW(3))', [name, email, hashedPassword]);
+        const user = {
+            id: result.insertId,
+            name,
+            email,
+            globalRole: 'USER',
+        };
         const token = (0, authMiddleware_1.signToken)({ id: user.id, globalRole: user.globalRole });
         res.status(201).json({ token, user });
     }
@@ -50,7 +44,8 @@ exports.register = register;
 const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const user = await prisma_1.default.user.findUnique({ where: { email } });
+        const [rows] = await db_1.default.execute('SELECT * FROM users WHERE email = ?', [email]);
+        const user = rows[0];
         if (!user) {
             res.status(401).json({ error: 'Email o contraseña incorrectos' });
             return;
@@ -83,16 +78,8 @@ exports.login = login;
 const getMe = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const user = await prisma_1.default.user.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                globalRole: true,
-                createdAt: true,
-            },
-        });
+        const [rows] = await db_1.default.execute('SELECT id, name, email, globalRole, createdAt FROM users WHERE id = ?', [userId]);
+        const user = rows[0];
         if (!user) {
             res.status(404).json({ error: 'Usuario no encontrado' });
             return;

@@ -9,7 +9,8 @@ const path_1 = __importDefault(require("path"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const categoryRoutes_1 = __importDefault(require("./routes/categoryRoutes"));
 const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
-// TODO: import collectionRoutes from './routes/collectionRoutes';
+const collectionRoutes_1 = __importDefault(require("./routes/collectionRoutes"));
+const visitRoutes_1 = __importDefault(require("./routes/visitRoutes"));
 // TODO: import visitRoutes from './routes/visitRoutes';
 // TODO: import circuitRoutes from './routes/circuitRoutes';
 const errorHandler_1 = require("./middleware/errorHandler");
@@ -31,17 +32,19 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/categories', categoryRoutes_1.default);
 app.use('/api/locations', locationRoutes_1.default);
+app.use('/api/collections', collectionRoutes_1.default);
+app.use('/api', visitRoutes_1.default); // Mounted at /api because it has /api/visits and /api/locations/:id/visits
 // TODO: app.use('/api/collections', collectionRoutes);
 // TODO: app.use('/api/visits', visitRoutes);
 // TODO: app.use('/api/circuits', circuitRoutes);
 // ─── Catch-all for unknown API routes → 404 JSON ────────────
-app.all('/api/*path', (_req, res) => {
+app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Ruta de API no encontrada' });
 });
 // ─── Static: SPA frontend ───────────────────────────────────
 const publicDir = path_1.default.join(process.cwd(), 'public');
 app.use(express_1.default.static(publicDir));
-app.get('*path', (_req, res) => {
+app.use((_req, res) => {
     res.sendFile(path_1.default.join(publicDir, 'index.html'), (err) => {
         if (err) {
             // No frontend build available yet — just send a plain 200
