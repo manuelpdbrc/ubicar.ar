@@ -9,6 +9,7 @@ import {
   updateLocation,
   deleteLocation,
 } from '../controllers/locationController';
+import { getVisitsByLocation } from '../controllers/visitController';
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.get('/code/:code', getLocationByCode);
 // Protected endpoints
 router.get('/', authenticate, getLocations);
 router.get('/:id', authenticate, getLocationById);
+router.get('/:id/visits', authenticate, getVisitsByLocation);
 router.post('/', authenticate, upload.single('image'), createLocation);
 router.put('/:id', authenticate, upload.single('image'), updateLocation);
 router.delete('/:id', authenticate, deleteLocation);

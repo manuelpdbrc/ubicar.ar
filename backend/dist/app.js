@@ -33,7 +33,7 @@ app.use('/api/auth', authRoutes_1.default);
 app.use('/api/categories', categoryRoutes_1.default);
 app.use('/api/locations', locationRoutes_1.default);
 app.use('/api/collections', collectionRoutes_1.default);
-app.use('/api', visitRoutes_1.default); // Mounted at /api because it has /api/visits and /api/locations/:id/visits
+app.use('/api/visits', visitRoutes_1.default);
 // TODO: app.use('/api/collections', collectionRoutes);
 // TODO: app.use('/api/visits', visitRoutes);
 // TODO: app.use('/api/circuits', circuitRoutes);
