@@ -61,7 +61,7 @@ export function LocationMarker({
         click: () => onClick?.(location),
       }}
     >
-      <Popup>
+      <Popup autoPan={false}>
         <div style={{ fontFamily: 'Inter, sans-serif', minWidth: '160px' }}>
           {location.imageUrl && (
             <div style={{ marginBottom: '0.5rem', borderRadius: '4px', overflow: 'hidden', height: '100px' }}>
