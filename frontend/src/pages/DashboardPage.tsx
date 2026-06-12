@@ -96,6 +96,11 @@ export default function DashboardPage() {
     setInitialFormCoords(null);
   }
 
+  function handleLocationDelete(locationId: number) {
+    setLocations((prev) => prev.filter((l) => l.id !== locationId));
+    setSelectedLocationId(null);
+  }
+
   function handleLocationClick(location: Location) {
     setSelectedLocationId(location.id);
   }
@@ -222,6 +227,7 @@ export default function DashboardPage() {
         isOpen={showLocationForm}
         onClose={() => { setShowLocationForm(false); setEditLocation(null); setInitialFormCoords(null); }}
         onSuccess={handleLocationSuccess}
+        onDelete={handleLocationDelete}
         editLocation={editLocation}
         initialLat={initialFormCoords?.lat}
         initialLng={initialFormCoords?.lng}

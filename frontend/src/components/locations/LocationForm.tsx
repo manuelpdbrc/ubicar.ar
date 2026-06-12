@@ -16,6 +16,7 @@ interface LocationFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (location: Location) => void;
+  onDelete?: (locationId: number) => void;
   editLocation?: Location | null;
   initialLat?: number;
   initialLng?: number;
@@ -25,6 +26,7 @@ export function LocationForm({
   isOpen,
   onClose,
   onSuccess,
+  onDelete,
   editLocation,
   initialLat,
   initialLng,
@@ -40,6 +42,7 @@ export function LocationForm({
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { showToast } = useToast();
 
@@ -102,6 +105,25 @@ export function LocationForm({
       }
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
+    }
+  }
+
+  async function handleDelete() {
+    if (!editLocation || !onDelete) return;
+    const confirmDelete = window.confirm('¿Estás seguro de que querés eliminar esta ubicación? Esta acción no se puede deshacer.');
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await api.delete(`/api/locations/${editLocation.id}`);
+      showToast('Ubicación eliminada', 'success');
+      onDelete(editLocation.id);
+      onClose();
+    } catch (err) {
+      const msg = err instanceof ApiRequestError ? err.message : 'Error al eliminar ubicación';
+      showToast(msg, 'error');
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -468,13 +490,27 @@ export function LocationForm({
           </div>
         )}
 
-        <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" variant="primary" isLoading={isSubmitting}>
-            {isEditing ? 'Guardar cambios' : 'Crear ubicación'}
-          </Button>
+        <div className="form-actions" style={{ justifyContent: isEditing ? 'space-between' : 'flex-end', marginTop: '1rem' }}>
+          {isEditing && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDelete}
+              isLoading={isDeleting}
+              disabled={isSubmitting}
+              style={{ color: 'var(--color-error)', borderColor: 'var(--color-error)' }}
+            >
+              🗑️ Eliminar Ubicación
+            </Button>
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting || isDeleting}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="primary" isLoading={isSubmitting} disabled={isDeleting}>
+              {isEditing ? 'Guardar cambios' : 'Crear ubicación'}
+            </Button>
+          </div>
         </div>
       </form>
     </Modal>
